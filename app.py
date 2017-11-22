@@ -1,4 +1,5 @@
 import falcon
+import pyhdf
 
 class QuoteResource:
     def on_get(self, req, resp):
