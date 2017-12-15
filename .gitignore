@@ -102,3 +102,10 @@ ENV/
 
 # hdf file
 *.hdf
+*.HDF
+
+#shp file
+shape_files
+
+#aod image
+aod-image

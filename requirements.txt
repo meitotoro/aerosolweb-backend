@@ -1,2 +1,3 @@
 falcon==1.3.0
+falcon-cors==1.1.7
 uWSGI==2.0.15
