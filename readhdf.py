@@ -152,8 +152,7 @@ if __name__ == "__main__":
     lon = np.linspace(35, 150, 1150)
     lat = np.linspace(15, 60, 450)
     
-    #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
+    year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
     month_aod,sites_aod = monthMap(files_path, 2006, 1)
     print("first 10 items in image: {}".format(month_aod[:10]))
-    print("first 5 items in image: {}".format(sites_aod[:5]))

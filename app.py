@@ -57,10 +57,12 @@ class SitesAODResource(object):
         for file in files:
             print(file)
             if not os.path.isdir(file):
+                #文件夹中存在这个image，返回image和aod_site
                 if file==name:
-                    filename=file
+                    filename=name
                     AODfilename="site-aod-"+str(year)+"-"+str(month)+".txt"
-                    fh = open(AODfilename, 'r')
+                    aod_path=image_path+AODfilename
+                    fh = open(aod_path, 'r')
                     sites_aod=json.loads(fh.read())
                     break
         else:
