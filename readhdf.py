@@ -1,3 +1,4 @@
+#!/home/mei/aerosolweb-backend/.venv/bin/python
 # -*- coding: utf-8 -*-
 import datetime
 import math
@@ -140,7 +141,7 @@ def monthMap(path, year, month):
                 return image_name,sites_aod 
             
     #return month_aod.tolist()
-    return []  # 没有找到匹配文件
+    return "",""  # 没有找到匹配文件
 
 
 if __name__ == "__main__":
@@ -152,7 +153,9 @@ if __name__ == "__main__":
     lon = np.linspace(35, 150, 1150)
     lat = np.linspace(15, 60, 450)
     
-    year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
+    #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
-    month_aod,sites_aod = monthMap(files_path, 2006, 1)
-    print("first 10 items in image: {}".format(month_aod[:10]))
+    image_name,sites_aod = monthMap(files_path, 2006, 1)
+    ''' print(month_aod)
+    print(sites_aod) '''
+    # print("first 10 items in image: {}".format(month_aod[:10]))
