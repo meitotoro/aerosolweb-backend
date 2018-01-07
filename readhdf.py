@@ -1,4 +1,4 @@
-#!/home/mei/aerosolweb-backend/.venv/bin/python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 import datetime
 import math
@@ -100,7 +100,7 @@ def monthMap(path, year, month):
     date=str(year)+"-"+str(month)
     files = os.listdir(path)
     month_aod = []
-    image_path="/home/mei/aerosolweb-backend/aod-image/"
+    image_path="aod-image/"
     #image_aod=[]
     for file in files:
         if not os.path.isdir(file):
@@ -111,7 +111,7 @@ def monthMap(path, year, month):
                 srap = SrapData(file_path)
                 month_aod = srap.aod_550
                 image_name=image.plot_image(month_aod,year,month)
-                site_path="/home/mei/aerosolweb-backend/sites.txt" 
+                site_path="sites.txt" 
                 sites_aod={}
                 sites=[]
                 aod=[]                             
@@ -145,7 +145,7 @@ def monthMap(path, year, month):
 
 
 if __name__ == "__main__":
-    files_path = "/home/mei/aerosolweb-backend/data/MODIS/"
+    files_path = "data/MODIS/"
     #页面传过来站点名称或者经纬度信息
     temp_lon = 50
     temp_lat = 40
