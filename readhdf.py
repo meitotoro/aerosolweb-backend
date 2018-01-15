@@ -110,11 +110,19 @@ def monthMap(path, year, month):
             if (temp_year == year and temp_month == month):
                 srap = SrapData(file_path)
                 month_aod = srap.aod_550
-                #China_image_name=image.plotChina_image(month_aod,year,month)
+                img_name=[]
+                #全国地理底图的aod数据
+                China_image_name=image.plotChina_image(month_aod,year,month)
                 #京津冀经度（113,120）,纬度(36,43)
-                #Jingjinji_image_name=image.plot_VectorClipImage(month_aod,year,month,113,36,120,43,"jingjinji")
+                Jingjinji_image_name=image.plot_VectorClipImage(month_aod,year,month,113,36,120,42.8,"jingjinji")
+                #长三角经纬度（118,123），纬度（28,34）
+                changsanjiao_image_name=image.plot_VectorClipImage(month_aod,year,month,115.5,27.7,123,34.8,"changsanjiao")
                 #珠三角经度(111,116)，纬度(21,25)
-                zhusanjiao_image_name=image.plot_VectorClipImage(month_aod,year,month,111,21,116,25,"zhusanjiao")
+                zhusanjiao_image_name=image.plot_VectorClipImage(month_aod,year,month,111.2,21.5,115.5,24.5,"zhusanjiao")
+                img_name.append(China_image_name)
+                img_name.append(Jingjinji_image_name)
+                img_name.append(changsanjiao_image_name)
+                img_name.append(zhusanjiao_image_name)
                 site_path="sites.txt" 
                 sites_aod={}
                 sites=[]
@@ -142,7 +150,7 @@ def monthMap(path, year, month):
                     fh.write(contents.encode("gb2312")) 
                     fh.close() 
                     print(sites_aod)
-                return filename,sites_aod 
+                return img_name,sites_aod 
             
     #return month_aod.tolist()
     return "",""  # 没有找到匹配文件
