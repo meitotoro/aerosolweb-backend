@@ -12,46 +12,60 @@ import matplotlib.pyplot as plt
 myfont=FontProperties(fname="/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc")
 matplotlib.rcParams["axes.unicode_minus"]=False
 
-def plotChina_image(data,year,month):
+def plotChina_image(data,year,month,satellite):
     date=str(year)+"-"+str(month)
     """从aod数据生成图像"""
-    data[data > 1.5] = 1.5  #原始数据经度35-150,0.1度一个像素，纬度15-60
-    data = data[30:450, 350:1030]  #切片后的数据纬度15-57，经度70-138度，包含了中国的国界线
+    data[data > 1.5] = 1.5  
+    if satellite=="modis":#原始数据经度35-150,0.1度一个像素，纬度15-60
+        data = data[30:450, 350:1030]  #切片后的数据纬度15-57，经度70-138度，包含了中国的国界线
     img_data = np.ma.masked_equal(data, -9.999)
     min_value = 0
     max_value = 1.6
     # create figure and axes instances
-
     fig = plt.figure()
-    m = Basemap(
+    if satellite=="modis":
+        m = Basemap(
         projection='merc',
         llcrnrlon=70,
         llcrnrlat=15,
         urcrnrlon=138,
         urcrnrlat=57,
-        resolution='l')    
+        resolution='l')
+        parallels = np.arange(15, 57, 10.)
+        meridians = np.arange(70, 138, 10.) 
+        lats, lons = np.mgrid[57:15:-0.1, 70:138:0.1]
+        # add title
+        plt.title('SARP AOD_'+date)
+        filename="sarp-aod-"+date+"-china.png"
+    elif satellite=="avhrr": #avhrr数据经度75-135,0.1度一个像素，纬度15-45
+        m = Basemap(
+        projection='merc',
+        llcrnrlon=75,
+        llcrnrlat=15,
+        urcrnrlon=135.1,
+        urcrnrlat=45.1,
+        resolution='l')
+        parallels = np.arange(15, 45.1, 10.)
+        meridians = np.arange(75, 135.1, 10.)  
+        lats, lons = np.mgrid[45.1:15:-0.1, 75:135.1:0.1]  
+        # add title
+        plt.title('AVHRR AOD_'+date)
+        filename="avhrr-aod-"+date+"-china.png"     
     # read shapefile.生成全国底图的image
     m.readshapefile("shape_files/ChinaProvince", "ChinaProvince")
     # draw coastlines, state and country boundaries, edge of map.
     m.drawcoastlines(linewidth=0.3)
-    #m.drawcountries()
-    # draw parallels.
-    parallels = np.arange(15, 57, 10.)
+    # draw parallels.    
     m.drawparallels(parallels, labels=[1, 0, 0, 0], fontsize=10)
-    # draw meridians
-    meridians = np.arange(70, 138, 10.)
-    m.drawmeridians(meridians, labels=[0, 0, 0, 1], fontsize=10)
-    lats, lons = np.mgrid[57:15:-0.1, 70:138:0.1]
+    # draw meridians    
+    m.drawmeridians(meridians, labels=[0, 0, 0, 1], fontsize=10)    
     # draw filled contours.
     clevs = np.arange(min_value, max_value, 0.1)
     cs = m.contourf(
-        lons, lats, img_data, clevs, cmap=plt.cm.rainbow, latlon=True)
-    
+        lons, lats, img_data, clevs, cmap=plt.cm.rainbow, latlon=True)    
     # add colorbar.
     cbar = m.colorbar(cs, location='bottom', pad="8%",ticks=[0.0,0.3,0.6,0.9,1.2,1.5])
     cbar.set_label('Aerosol Optical Depth')
-    # add title
-    plt.title('SARP AOD_'+date)
     plt.margins()
     fig.canvas.draw()
     width, height = fig.canvas.get_width_height()
@@ -59,10 +73,14 @@ def plotChina_image(data,year,month):
     data.shape = (width, height, 4)
     # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
     data = np.roll(data, 3, axis=2)
-    #plt.show()
-    filename="sarp-aod-"+date+".png"
+    #plt.show()    
     #fig.tight_layout()
-    plt.savefig("aod-image/sarp-aod-%s.png" % date, format = 'png',bbox_inches='tight')
+    if satellite=="modis":
+        plt.savefig("aod-image/sarp-aod-%s-china.png" % date, format = 'png',bbox_inches='tight')
+    elif satellite=="avhrr":
+        plt.savefig("aod-image/avhrr-aod-%s-china.png" % date, format = 'png',bbox_inches='tight')
+    else:
+        return    
     plt.close("all")
     return filename
     
@@ -101,7 +119,7 @@ def plot_VectorClipImage(data,year,month,minLon,minLat,maxLon,maxLat,name):
         'chengde':[u'承德',117.2,41.1],
         'zhangjiakou':[u'张家口',114.87,40.82],
         'baoding':[u'保定',115,38.85],
-        'langfang':[u'廊坊',116.2,39,53],
+        'langfang':[u'廊坊',116.3,39.2],
         'cangzhou':[u'沧州',116.43,38.23],
         'hengshui':[u'衡水',115.52,37.62],
         'shijiazhuang':[u'石家庄',114.18,38.03],
