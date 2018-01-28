@@ -40,14 +40,14 @@ def plotChina_image(data,year,month,satellite):
     elif satellite=="avhrr": #avhrr数据经度75-135,0.1度一个像素，纬度15-45
         m = Basemap(
         projection='merc',
-        llcrnrlon=75,
+        llcrnrlon=70,
         llcrnrlat=15,
-        urcrnrlon=135.1,
-        urcrnrlat=45.1,
+        urcrnrlon=138,
+        urcrnrlat=57,
         resolution='l')
-        parallels = np.arange(15, 45.1, 10.)
-        meridians = np.arange(75, 135.1, 10.)  
-        lats, lons = np.mgrid[45.1:15:-0.1, 75:135.1:0.1]  
+        parallels = np.arange(15, 57, 10.)
+        meridians = np.arange(70, 138, 10.)  
+        lats, lons = np.mgrid[45:15:-0.1, 75:135:0.1]  
         # add title
         plt.title('AVHRR AOD_'+date)
         filename="avhrr-aod-"+date+"-china.png"     
@@ -61,6 +61,7 @@ def plotChina_image(data,year,month,satellite):
     m.drawmeridians(meridians, labels=[0, 0, 0, 1], fontsize=10)    
     # draw filled contours.
     clevs = np.arange(min_value, max_value, 0.1)
+    print(lons.shape," ",lats.shape," ",img_data.shape)
     cs = m.contourf(
         lons, lats, img_data, clevs, cmap=plt.cm.rainbow, latlon=True)    
     # add colorbar.

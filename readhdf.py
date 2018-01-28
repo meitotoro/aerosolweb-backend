@@ -32,10 +32,8 @@ class AVHRRData(object):
         print("Keys: %s" % f.keys())
         # Get the data
         #光学厚度图像301*601
-        self.aod_550 = f["Aerosol_Optical_Depth_Mean: Mean of Daily"][0]
-        print(self.aod_550)
-       
-       
+        aod_550 = f["Aerosol_Optical_Depth_Mean: Mean of Daily"]
+        self.aod_550=aod_550[0:300,0:600]    
 
     def locate(self, lon, lat):
         '''在modis图像中找到与指定坐标最接近的坐标点索引，以及该点的坐标值'''
@@ -197,7 +195,7 @@ if __name__ == "__main__":
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
     #image_name,sites_aod = monthMap(files_path_modis,"modis", 2006, 1,"china")
-    image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 2006, 1,"china")
+    image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"china")
     ''' print(month_aod)
     print(sites_aod) '''
     # print("first 10 items in image: {}".format(month_aod[:10]))
