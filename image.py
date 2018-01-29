@@ -85,14 +85,22 @@ def plotChina_image(data,year,month,satellite):
     plt.close("all")
     return filename
     
-def plot_VectorClipImage(data,year,month,minLon,minLat,maxLon,maxLat,name):
+def plot_VectorClipImage(data,year,month,minLon,minLat,maxLon,maxLat,name,satellite):
     date=str(year)+"-"+str(month)
     """从aod数据生成图像"""
-    data[data > 1.5] = 1.5  #原始数据经度35-150,0.1度一个像素，纬度15-60
-    minrow_index=int(600-10*maxLat)
-    maxrow_index=int(600-10*minLat)
-    mincolumn_index=int(10*minLon-350)
-    maxcolumn_index=int(10*maxLon-350)
+    data[data > 1.5] = 1.5  #modis原始数据经度35-150,0.1度一个像素，纬度15-60
+    if satellite=="modis":
+        minrow_index=int(600-10*maxLat)
+        maxrow_index=int(600-10*minLat)
+        mincolumn_index=int(10*minLon-350)
+        maxcolumn_index=int(10*maxLon-350)
+    elif satellite=="avhrr":
+        minrow_index=int(450-10*maxLat)
+        maxrow_index=int(450-10*minLat)
+        mincolumn_index=int(10*minLon-750)
+        maxcolumn_index=int(10*maxLon-750)
+    else:
+        return        
     data = data[minrow_index:maxrow_index, mincolumn_index:maxcolumn_index]  #切片后的数据
     img_data = np.ma.masked_equal(data, -9.999)
     min_value = 0
@@ -233,7 +241,7 @@ def plot_VectorClipImage(data,year,month,minLon,minLat,maxLon,maxLat,name):
     cbar.set_label('Aerosol Optical Depth')
     # add title
     name=name.capitalize()
-    plt.title(name+'_SARP AOD_'+date)
+    plt.title(name+'_'+satellite.upper()+'_'+'AOD_'+date)
     plt.margins()
     fig.canvas.draw()
     width, height = fig.canvas.get_width_height()
@@ -243,8 +251,8 @@ def plot_VectorClipImage(data,year,month,minLon,minLat,maxLon,maxLat,name):
     data = np.roll(data, 3, axis=2)
    
     #plt.show()
-    filename="sarp-aod-"+date+"-"+name.lower()+".png"
+    filename=satellite+"-aod-"+date+"-"+name.lower()+".png"
     #fig.tight_layout()
-    plt.savefig("aod-image/sarp-aod-%s-%s.png" % (date,name.lower()), format = 'png',bbox_inches='tight')
+    plt.savefig("aod-image/"+filename, format = 'png',bbox_inches='tight')
     plt.close("all")
     return filename

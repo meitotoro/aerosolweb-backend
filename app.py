@@ -62,12 +62,6 @@ class SitesAODResource(object):
                 #文件夹中存在这个image，返回image和aod_site
                 if file==name:
                     filename=name
-                    ''' jingjinji_name=name.replace('.png','-jingjinji.png')
-                    changsanjiao_name=name.replace('.png','-changsanjiao.png')
-                    zhusanjiao_name=name.replace('.png','-zhusanjiao.png')
-                    filename.append(jingjinji_name)
-                    filename.append(changsanjiao_name)
-                    filename.append(zhusanjiao_name) '''
                     AODfilename=area+"-"+"site-aod-"+str(year)+"-"+str(month)+".txt"
                     aod_path=image_path+AODfilename
                     fh = open(aod_path, 'r')
