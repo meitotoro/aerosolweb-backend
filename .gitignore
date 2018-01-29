@@ -103,7 +103,7 @@ ENV/
 # hdf file
 *.hdf
 *.HDF
-.h5
+*.h5
 
 # shp file
 shape_files
