@@ -134,13 +134,13 @@ def monthMap(path, satellite, year, month,area):
                     image_name=image.plotChina_image(month_aod,year,month,satellite)
                 elif (area=="jingjinji"):
                     #京津冀经度（113,120）,纬度(36,43)
-                    image_name=image.plot_VectorClipImage(month_aod,year,month,113,36,120,42.8,"jingjinji")
+                    image_name=image.plot_VectorClipImage(month_aod,year,month,113,36,120,42.8,"jingjinji",satellite)
                 elif (area=="changsanjiao"):
                     #长三角经纬度（118,123），纬度（28,34）
-                    image_name=image.plot_VectorClipImage(month_aod,year,month,115.5,27.7,123,34.8,"changsanjiao")
+                    image_name=image.plot_VectorClipImage(month_aod,year,month,115.5,27.7,123,34.8,"changsanjiao",satellite)
                 elif(area=="zhusanjiao"):
                     #珠三角经度(111,116)，纬度(21,25)
-                    image_name=image.plot_VectorClipImage(month_aod,year,month,111.2,21.5,115.5,24.5,"zhusanjiao")
+                    image_name=image.plot_VectorClipImage(month_aod,year,month,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
                 else:
                     image_name=""
                     return "",""
@@ -171,7 +171,7 @@ def monthMap(path, satellite, year, month,area):
                     sites_aod["aod"]=aod
                     sites_aod["locate"]=locate
                     contents=json.dumps(sites_aod)
-                    filename=image_path+satellite+"-"+area+"-site-aod-"+date+".txt"
+                    filename=image_path+satellite+"-site-aod-"+date+"-"+area+".txt"
                     fh = codecs.open(filename, 'w',"utf-8") 
                     fh.write(contents.encode("gb2312")) 
                     fh.close() 
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
     #image_name,sites_aod = monthMap(files_path_modis,"modis", 2006, 1,"china")
-    image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"china")
+    image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
     ''' print(month_aod)
     print(sites_aod) '''
     # print("first 10 items in image: {}".format(month_aod[:10]))
