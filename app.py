@@ -12,20 +12,10 @@ import logging
 public_cors = CORS(allow_all_origins=True)
 
 
-class MonthMap(object):
-    def on_get(self, req, resp):
-        files_path = "/home/mei/aerosolweb-backend/data/MODIS/"
-        #页面传过来的年份
-        year = int(req.get_param('year'))
-        month = int(req.get_param('month'))
-        month_aod = readhdf.monthMap(files_path, year, month)
-        resp.media = {"data":month_aod}
-
-
 class AodResource(object):
     def on_get(self, req, resp):
         """Handles GET requests"""
-        files_path = "/home/mei/aerosolweb-backend/data/MODIS/"
+        files_path = "data/MODIS/"
         #页面传过来站点名称或者经纬度信息
         temp_lon = float(req.get_param('lon'))
         temp_lat = float(req.get_param('lat'))
@@ -42,7 +32,7 @@ class ImageResource(object):
         print(dir(req))
         resp.status=falcon.HTTP_200
         resp.content_type="image/png"
-        image_path="/home/mei/aerosolweb-backend/aod-image/"
+        image_path="aod-image/"
         path=image_path+filename
         with open(path,"r")as f:
             resp.body=f.read()
@@ -54,8 +44,8 @@ class SitesAODResource(object):
         month=int(req.get_param("month"))
         area=str(req.get_param("area"))
         satellite=str(req.get_param("satellite"))
-        image_path="/home/mei/aerosolweb-backend/aod-image/"
-        data_path = "/home/mei/aerosolweb-backend/data/"+satellite.upper()+"/"
+        image_path="aod-image/"
+        data_path = "data/"+satellite.upper()+"/"
         files=os.listdir(image_path)
         name=satellite+"-aod-"+str(year)+"-"+str(month)+"-"+area+".png"
         print(name)

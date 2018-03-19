@@ -11,6 +11,8 @@ import json
 import codecs
 import h5py
 
+image_path="aod-image/"
+
 class AodPoint(object):
     '''创建一个像素点对象'''
 
@@ -61,6 +63,12 @@ class SrapData(object):
         return index, self.aod_550[index]
 
 
+
+
+
+
+
+
 '''
 遍历文件夹下的所有HDF文件，拿到对应的时间段范围的HDF文件列表
 假设时间是以年为单位，比如2003-2009年
@@ -102,9 +110,97 @@ def fileList(path, time_start, time_end, lon, lat):
     print(year_aod)
     return year_aod
 
+def getSitesAOD(satellite,file_path,area,date):
+    date=date
+    satellite=satellite
+    if satellite=="modis":
+        srap = SrapData(file_path)
+    elif satellite=="avhrr":
+        avhrr = AVHRRData(file_path)
+    else:
+        return
+    site_path=area+"-"+"sites.txt" 
+    sites_aod={}
+    sites=[]
+    aod=[]
+    locate=[]                             
+    try:
+        file_object=codecs.open(site_path,"r")
+        read= file_object.read()
+        site_json=json.loads(read)
+        print(site_json)
+        for key,value in site_json.items():
+            lon=value[0]
+            lat=value[1]
+            if satellite=="modis":
+                index, aod_550 = srap.locate(lon, lat)
+            elif satellite=="avhrr":
+                index, aod_550=avhrr.locate(lon,lat)                        
+            locate.append(value)
+            sites.append(key)
+            aod.append(aod_550)
+                
+    finally:
+        file_object.close()
+        sites_aod["sites"]=sites
+        sites_aod["aod"]=aod
+        sites_aod["locate"]=locate
+        contents=json.dumps(sites_aod)
+        filename=image_path+satellite+"-site-aod-"+date+"-"+area+".txt"
+        fh = codecs.open(filename, 'w',"utf-8") 
+        fh.write(contents.encode("gb2312")) 
+        fh.close() 
+        print(sites_aod)
+    return sites_aod 
 
-def monthMap(path, satellite, year, month,area): 
-    date=str(year)+"-"+str(month)
+def getYearAod(satellite,path,year):
+    files=os.listdir(path)
+    year_aod=[]        
+    for file in files:
+        if not os.path.isdir(file):
+            if satellite=="modis":
+                temp_year = int(file.split('.')[1][15:19])
+            elif satellite=="avhrr":
+                temp_year=int(file[19:23])   
+            else:
+                return
+            file_path = path + file
+            count=0
+            if (temp_year == year):
+                count=count+1
+                month_aod_550=SrapData(file_path)
+                year_aod=year_aod+month_aod_550
+            year_aod=year_aod/count
+    return year_aod
+
+    
+def yearMap(path,satellite, year,area):
+    year_aod=getYearAod(satellite,path,year)
+    if year_aod==""
+        return
+    date=year
+    if(area=="china"):
+        #全国地理底图的aod数据
+        image_name=image.plotChina_image(year_aod,date,satellite)
+    elif (area=="jingjinji"):
+        #京津冀经度（113,120）,纬度(36,43)
+        image_name=image.plot_VectorClipImage(year_aod,date,113,36,120,42.8,"jingjinji",satellite)
+    elif (area=="changsanjiao"):
+        #长三角经纬度（118,123），纬度（28,34）
+        image_name=image.plot_VectorClipImage(year_aod,date,115.5,27.7,123,34.8,"changsanjiao",satellite)
+    elif(area=="zhusanjiao"):
+        #珠三角经度(111,116)，纬度(21,25)
+        image_name=image.plot_VectorClipImage(year_aod,date,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
+    else:
+        image_name=""
+        return "",""
+    sites_aod=getSitesAOD(satellite,path,area,date)
+    return image_name,sites_aod 
+
+
+def monthMap(path, satellite1, year, month,area): 
+    date=str(year)+str(month)
+    satellite=satellite1
     files = os.listdir(path)
     month_aod = []
     image_path="aod-image/"
@@ -131,51 +227,20 @@ def monthMap(path, satellite, year, month,area):
                     return
                 if(area=="china"):
                     #全国地理底图的aod数据
-                    image_name=image.plotChina_image(month_aod,year,month,satellite)
+                    image_name=image.plotChina_image(month_aod,date,satellite)
                 elif (area=="jingjinji"):
                     #京津冀经度（113,120）,纬度(36,43)
-                    image_name=image.plot_VectorClipImage(month_aod,year,month,113,36,120,42.8,"jingjinji",satellite)
+                    image_name=image.plot_VectorClipImage(month_aod,date,113,36,120,42.8,"jingjinji",satellite)
                 elif (area=="changsanjiao"):
                     #长三角经纬度（118,123），纬度（28,34）
-                    image_name=image.plot_VectorClipImage(month_aod,year,month,115.5,27.7,123,34.8,"changsanjiao",satellite)
+                    image_name=image.plot_VectorClipImage(month_aod,date,115.5,27.7,123,34.8,"changsanjiao",satellite)
                 elif(area=="zhusanjiao"):
                     #珠三角经度(111,116)，纬度(21,25)
-                    image_name=image.plot_VectorClipImage(month_aod,year,month,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
+                    image_name=image.plot_VectorClipImage(month_aod,date,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
                 else:
                     image_name=""
                     return "",""
-                site_path=area+"-"+"sites.txt" 
-                sites_aod={}
-                sites=[]
-                aod=[]
-                locate=[]                             
-                try:
-                    file_object=codecs.open(site_path,"r")
-                    read= file_object.read()
-                    site_json=json.loads(read)
-                    print(site_json)
-                    for key,value in site_json.items():
-                        lon=value[0]
-                        lat=value[1]
-                        if satellite=="modis":
-                            index, aod_550 = srap.locate(lon, lat)
-                        elif satellite=="avhrr":
-                            index, aod_550=avhrr.locate(lon,lat)                        
-                        locate.append(value)
-                        sites.append(key)
-                        aod.append(aod_550)
-                         
-                finally:
-                    file_object.close()
-                    sites_aod["sites"]=sites
-                    sites_aod["aod"]=aod
-                    sites_aod["locate"]=locate
-                    contents=json.dumps(sites_aod)
-                    filename=image_path+satellite+"-site-aod-"+date+"-"+area+".txt"
-                    fh = codecs.open(filename, 'w',"utf-8") 
-                    fh.write(contents.encode("gb2312")) 
-                    fh.close() 
-                    print(sites_aod)
+                sites_aod=getSitesAOD(satellite,file_path,area,date)
                 return image_name,sites_aod 
             
     #return month_aod.tolist()
@@ -195,7 +260,8 @@ if __name__ == "__main__":
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
     #image_name,sites_aod = monthMap(files_path_modis,"modis", 2006, 1,"china")
-    image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
+    #image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
+    image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"china")
     ''' print(month_aod)
     print(sites_aod) '''
     # print("first 10 items in image: {}".format(month_aod[:10]))

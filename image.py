@@ -12,8 +12,13 @@ import matplotlib.pyplot as plt
 myfont=FontProperties(fname="/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc")
 matplotlib.rcParams["axes.unicode_minus"]=False
 
-def plotChina_image(data,year,month,satellite):
-    date=str(year)+"-"+str(month)
+def plotChina_image(data,date,satellite):
+    date=date
+    if len(date)==6:
+        year=date[0:3]
+        month=date[4:5]
+        date=year+"-"+month       
+    
     """从aod数据生成图像"""
     data[data > 1.5] = 1.5  
     if satellite=="modis":#原始数据经度35-150,0.1度一个像素，纬度15-60
@@ -85,8 +90,12 @@ def plotChina_image(data,year,month,satellite):
     plt.close("all")
     return filename
     
-def plot_VectorClipImage(data,year,month,minLon,minLat,maxLon,maxLat,name,satellite):
-    date=str(year)+"-"+str(month)
+def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
+    date=date
+    if len(date)==6:
+        year=date[0:3]
+        month=date[4:5]
+        date=year+"-"+month
     """从aod数据生成图像"""
     data[data > 1.5] = 1.5  #modis原始数据经度35-150,0.1度一个像素，纬度15-60
     if satellite=="modis":
