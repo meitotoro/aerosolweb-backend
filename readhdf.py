@@ -26,48 +26,43 @@ class AodPoint(object):
     def __repr__(self):
         return "\n{}-{} {}".format(self.year, self.month, self.aod)
 
-class AVHRRData(object):
-    def __init__(self,path):
+class SatelliteData(object):
+    def __init__(self,satellite,path,_aod550=np.array([])):
         self.path=path
-        f = h5py.File(path, 'r')
-        # List all groups
-        print("Keys: %s" % f.keys())
-        # Get the data
-        #光学厚度图像301*601
-        aod_550 = f["Aerosol_Optical_Depth_Mean: Mean of Daily"]
-        self.aod_550=aod_550[0:300,0:600]    
-
+        self.satellite=satellite
+        self.aod_550=np.array([0])
+        if not _aod550.any():            
+            if(satellite=="modis"):
+                obj = SD.SD(path, SD.SDC.READ)
+                #光学厚度图像676*451
+                aod_550 = obj.select("SRAP_AOD_MONTH_AVE at 550nm").get() * 0.001
+            elif(satellite=="avhrr"):                
+                f = h5py.File(path, 'r')
+                # List all groups
+                print("Keys: %s" % f.keys())
+                # Get the data
+                #光学厚度图像301*601
+                data = f["Aerosol_Optical_Depth_Mean: Mean of Daily"]
+                aod_550=data[0:300,0:600]
+            self.aod_550=aod_550   
+                  
+        else:
+            self.aod_550=_aod550 
+    
     def locate(self, lon, lat):
         '''在modis图像中找到与指定坐标最接近的坐标点索引，以及该点的坐标值'''
-        y_index = int(round((lon - 75) / 0.1))
-        x_index = int(round((lat - 15) / 0.1))
-        index = (x_index, y_index)
-        print(self.aod_550[index])
-        return index, self.aod_550[index]
-
-class SrapData(object):
-    '''输入经纬度坐标，找到对应的光学厚度值'''
-
-    def __init__(self, path):
-        self.path = path
-        obj = SD.SD(path, SD.SDC.READ)
-        #光学厚度图像676*451
-        self.aod_550 = obj.select("SRAP_AOD_MONTH_AVE at 550nm").get() * 0.001
-
-    def locate(self, lon, lat):
-        '''在modis图像中找到与指定坐标最接近的坐标点索引，以及该点的坐标值'''
-        y_index = int(round((lon - 35) / 0.1))
-        x_index = int(round((lat - 15) / 0.1))
-        index = (x_index, y_index)
-        print(self.aod_550[index])
-        return index, self.aod_550[index]
-
-
-
-
-
-
-
+        if self.satellite=="modis":
+            y_index = int(round((lon - 35) / 0.1))
+            x_index = int(round((lat - 15) / 0.1))
+            index = (x_index, y_index)
+            print(self.aod_550[index])
+            return index, self.aod_550[index]
+        elif self.satellite=="avhrr":
+            y_index = int(round((lon - 75) / 0.1))
+            x_index = int(round((lat - 15) / 0.1))
+            index = (x_index, y_index)
+            print(self.aod_550[index])
+            return index, self.aod_550[index]
 
 '''
 遍历文件夹下的所有HDF文件，拿到对应的时间段范围的HDF文件列表
@@ -87,7 +82,7 @@ def compare_aod_data(a, b):
     return 0
 
 
-def fileList(path, time_start, time_end, lon, lat):
+def fileList(path, satellite,time_start, time_end, lon, lat):
     files = os.listdir(path)
     year_aod = []
     for file in files:
@@ -98,7 +93,7 @@ def fileList(path, time_start, time_end, lon, lat):
             file_path = path + file
             if (year >= time_start and year <= time_end):
                 #在hdf文件中找到距离目标站点最接近的点的AOD
-                srap = SrapData(file_path)
+                srap = SatelliteData(satellite,file_path)
                 index, aod_550 = srap.locate(lon, lat)
                 if (aod_550 < 0):
                     continue
@@ -110,15 +105,10 @@ def fileList(path, time_start, time_end, lon, lat):
     print(year_aod)
     return year_aod
 
-def getSitesAOD(satellite,file_path,area,date):
-    date=date
+def getSitesAOD(satellite,aod,area,date):
+    date=str(date)
     satellite=satellite
-    if satellite=="modis":
-        srap = SrapData(file_path)
-    elif satellite=="avhrr":
-        avhrr = AVHRRData(file_path)
-    else:
-        return
+    satellite_data=SatelliteData(satellite,"",aod)
     site_path=area+"-"+"sites.txt" 
     sites_aod={}
     sites=[]
@@ -132,10 +122,7 @@ def getSitesAOD(satellite,file_path,area,date):
         for key,value in site_json.items():
             lon=value[0]
             lat=value[1]
-            if satellite=="modis":
-                index, aod_550 = srap.locate(lon, lat)
-            elif satellite=="avhrr":
-                index, aod_550=avhrr.locate(lon,lat)                        
+            index, aod_550 = satellite_data.locate(lon, lat)                      
             locate.append(value)
             sites.append(key)
             aod.append(aod_550)
@@ -155,7 +142,8 @@ def getSitesAOD(satellite,file_path,area,date):
 
 def getYearAod(satellite,path,year):
     files=os.listdir(path)
-    year_aod=[]        
+    year_aod=np.array([0])
+    count=0     
     for file in files:
         if not os.path.isdir(file):
             if satellite=="modis":
@@ -164,19 +152,20 @@ def getYearAod(satellite,path,year):
                 temp_year=int(file[19:23])   
             else:
                 return
-            file_path = path + file
-            count=0
+            file_path = path + file           
             if (temp_year == year):
                 count=count+1
-                month_aod_550=SrapData(file_path)
-                year_aod=year_aod+month_aod_550
-            year_aod=year_aod/count
+                month_aod_550=SatelliteData(satellite,file_path).aod_550
+                month_aod_550[month_aod_550<0]=0
+                year_aod=np.add(year_aod,month_aod_550)
+    year_aod=year_aod/count
+    year_aod[year_aod==0]=-9999        
     return year_aod
 
     
 def yearMap(path,satellite, year,area):
     year_aod=getYearAod(satellite,path,year)
-    if year_aod==""
+    if not year_aod.any():
         return
     date=year
     if(area=="china"):
@@ -194,7 +183,7 @@ def yearMap(path,satellite, year,area):
     else:
         image_name=""
         return "",""
-    sites_aod=getSitesAOD(satellite,path,area,date)
+    sites_aod=getSitesAOD(satellite,year_aod,area,date)
     return image_name,sites_aod 
 
 
@@ -217,14 +206,8 @@ def monthMap(path, satellite1, year, month,area):
                 return
             file_path = path + file
             if (temp_year == year and temp_month == month):
-                if satellite=="modis":
-                    srap = SrapData(file_path)
-                    month_aod = srap.aod_550
-                elif satellite=="avhrr":
-                    avhrr = AVHRRData(file_path)
-                    month_aod=avhrr.aod_550
-                else:
-                    return
+                satellite_data = SatelliteData(satellite,file_path)
+                month_aod = satellite_data.aod_550
                 if(area=="china"):
                     #全国地理底图的aod数据
                     image_name=image.plotChina_image(month_aod,date,satellite)
@@ -261,7 +244,8 @@ if __name__ == "__main__":
    
     #image_name,sites_aod = monthMap(files_path_modis,"modis", 2006, 1,"china")
     #image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
-    image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"china")
+    #image_name,sites_aod=yearMap(files_path_avhrr,"avhrr",2010,"china")
+    image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"jingjinji")
     ''' print(month_aod)
     print(sites_aod) '''
     # print("first 10 items in image: {}".format(month_aod[:10]))

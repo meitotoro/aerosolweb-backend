@@ -24,7 +24,7 @@ class AodResource(object):
         #srap的经纬度信息
         lon = np.linspace(35, 150, 1150)
         lat = np.linspace(15, 60, 450)
-        year_aod = readhdf.fileList(files_path, start, end, temp_lon, temp_lat)
+        year_aod = readhdf.fileList(files_path,"modis", start, end, temp_lon, temp_lat)
 
         resp.media = { "data": year_aod }
 class ImageResource(object):

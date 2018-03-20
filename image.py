@@ -13,7 +13,7 @@ myfont=FontProperties(fname="/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.
 matplotlib.rcParams["axes.unicode_minus"]=False
 
 def plotChina_image(data,date,satellite):
-    date=date
+    date=str(date)
     if len(date)==6:
         year=date[0:3]
         month=date[4:5]
@@ -40,7 +40,7 @@ def plotChina_image(data,date,satellite):
         meridians = np.arange(70, 138, 10.) 
         lats, lons = np.mgrid[57:15:-0.1, 70:138:0.1]
         # add title
-        plt.title('SARP AOD_'+date)
+        plt.title('MODIS AOD_'+date)
         filename="sarp-aod-"+date+"-china.png"
     elif satellite=="avhrr": #avhrr数据经度75-135,0.1度一个像素，纬度15-45
         m = Basemap(
@@ -82,7 +82,7 @@ def plotChina_image(data,date,satellite):
     #plt.show()    
     #fig.tight_layout()
     if satellite=="modis":
-        plt.savefig("aod-image/sarp-aod-%s-china.png" % date, format = 'png',bbox_inches='tight')
+        plt.savefig("aod-image/modis-aod-%s-china.png" % date, format = 'png',bbox_inches='tight')
     elif satellite=="avhrr":
         plt.savefig("aod-image/avhrr-aod-%s-china.png" % date, format = 'png',bbox_inches='tight')
     else:
@@ -91,7 +91,7 @@ def plotChina_image(data,date,satellite):
     return filename
     
 def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
-    date=date
+    date=str(date)
     if len(date)==6:
         year=date[0:3]
         month=date[4:5]
