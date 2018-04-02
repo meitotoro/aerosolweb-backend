@@ -169,28 +169,72 @@ def getYearAod(satellite,path,year):
         year_aod[year_aod==0]=-9999            
     return year_aod
 
+def getSeasonAod(satellite,path,year,season):
+    files=os.listdir(path)
+    season_aod=np.array([0])
+    count=0
+    if season=="spring":
+        years=[year,year,year]
+        months=[3,4,5]
+    elif season=='summer':
+        years=[year,year,year]
+        months=[6,7,8]
+    elif season=='autumn':
+        years=[year,year,year]
+        months=[9,10,11]
+    elif season=='winter':
+        years=[year,year+1,year+1]
+        months=[12,1,2]
+
+    for file in files:
+        if not os.path.isdir(file):
+            if satellite=="modis":
+                temp_year = int(file.split('.')[1][15:19])
+                temp_month=int(file.split('.')[1][19:21])
+            elif satellite=="avhrr":
+                temp_year=int(file[19:23])
+                temp_month=int(file[24:26])   
+            else:
+                return
+            file_path = path + file
+            for i in range(3):           
+                if (temp_year == years[i] and temp_month==months[i]):
+                    count=count+1
+                    month_aod_550=SatelliteData(satellite,file_path).aod_550
+                    month_aod_550[month_aod_550<0]=0
+                    season_aod=np.add(season_aod,month_aod_550)
+    if count==0:
+        season_aod=np.array([])
+    else:
+        season_aod=season_aod/count
+        season_aod[season_aod==0]=-9999            
+    return season_aod
+
     
-def yearMap(path,satellite, year,area):
-    year_aod=getYearAod(satellite,path,year)
-    if not year_aod.any():
+def yearSeasonMap(path,satellite, year,flag,area):
+    if flag=='':
+        aod=getYearAod(satellite,path,year)
+    else:        
+        aod=getSeasonAod(satellite,path,year,flag)
+    if not aod.any():
         return "",""
     date=year
     if(area=="china"):
         #全国地理底图的aod数据
-        image_name=image.plotChina_image(year_aod,date,satellite)
+        image_name=image.plotChina_image(aod,date,satellite)
     elif (area=="jingjinji"):
         #京津冀经度（113,120）,纬度(36,43)
-        image_name=image.plot_VectorClipImage(year_aod,date,113,36,120,42.8,"jingjinji",satellite)
+        image_name=image.plot_VectorClipImage(aod,date,113,36,120,42.8,"jingjinji",satellite)
     elif (area=="changsanjiao"):
         #长三角经纬度（118,123），纬度（28,34）
-        image_name=image.plot_VectorClipImage(year_aod,date,115.5,27.7,123,34.8,"changsanjiao",satellite)
+        image_name=image.plot_VectorClipImage(aod,date,115.5,27.7,123,34.8,"changsanjiao",satellite)
     elif(area=="zhusanjiao"):
         #珠三角经度(111,116)，纬度(21,25)
-        image_name=image.plot_VectorClipImage(year_aod,date,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
+        image_name=image.plot_VectorClipImage(aod,date,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
     else:
         image_name=""
         return "",""
-    sites_aod=getSitesAOD(satellite,year_aod,area,date,"year")
+    sites_aod=getSitesAOD(satellite,aod,area,date,"year")
     return image_name,sites_aod 
 
 
@@ -251,8 +295,8 @@ if __name__ == "__main__":
     
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
-    image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 2006, 1,"china")
-    #image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
+    #image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 2006, 1,"china")
+    image_name,sites_aod = yearSeasonMap(files_path_modis,"modis", 2003, "spring","china")
     #image_name,sites_aod=yearMap(files_path_avhrr,"avhrr",2010,"china")
     #image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"jingjinji")
     ''' print(month_aod)
