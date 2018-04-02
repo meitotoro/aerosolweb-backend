@@ -162,15 +162,18 @@ def getYearAod(satellite,path,year):
                 month_aod_550=SatelliteData(satellite,file_path).aod_550
                 month_aod_550[month_aod_550<0]=0
                 year_aod=np.add(year_aod,month_aod_550)
-    year_aod=year_aod/count
-    year_aod[year_aod==0]=-9999        
+    if count==0:
+        year_aod=np.array([])
+    else:
+        year_aod=year_aod/count
+        year_aod[year_aod==0]=-9999            
     return year_aod
 
     
 def yearMap(path,satellite, year,area):
     year_aod=getYearAod(satellite,path,year)
     if not year_aod.any():
-        return
+        return "",""
     date=year
     if(area=="china"):
         #全国地理底图的aod数据
