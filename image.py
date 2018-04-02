@@ -14,11 +14,10 @@ matplotlib.rcParams["axes.unicode_minus"]=False
 
 def plotChina_image(data,date,satellite):
     date=str(date)
-    if len(date)==6:
-        year=date[0:3]
-        month=date[4:5]
-        date=year+"-"+month       
-    
+    if len(date)>4:
+        year=date[0:4]
+        month=date[4:]
+        date=year+"-"+month 
     """从aod数据生成图像"""
     data[data > 1.5] = 1.5  
     if satellite=="modis":#原始数据经度35-150,0.1度一个像素，纬度15-60
@@ -41,7 +40,7 @@ def plotChina_image(data,date,satellite):
         lats, lons = np.mgrid[57:15:-0.1, 70:138:0.1]
         # add title
         plt.title('MODIS AOD_'+date)
-        filename="sarp-aod-"+date+"-china.png"
+        filename="modis-aod-"+date+"-china.png"
     elif satellite=="avhrr": #avhrr数据经度75-135,0.1度一个像素，纬度15-45
         m = Basemap(
         projection='merc',

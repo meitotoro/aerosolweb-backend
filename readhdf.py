@@ -29,6 +29,7 @@ class AodPoint(object):
 class SatelliteData(object):
     def __init__(self,satellite,path,_aod550=np.array([])):
         self.path=path
+        print(path)
         self.satellite=satellite
         self.aod_550=np.array([0])
         if not _aod550.any():            
@@ -105,10 +106,13 @@ def fileList(path, satellite,time_start, time_end, lon, lat):
     print(year_aod)
     return year_aod
 
-def getSitesAOD(satellite,aod,area,date):
+def getSitesAOD(satellite,aodOrPath,area,date,flag):
     date=str(date)
     satellite=satellite
-    satellite_data=SatelliteData(satellite,"",aod)
+    if flag=="month":
+        satellite_data=SatelliteData(satellite,aodOrPath)
+    elif flag=="year":
+        satellite_data=SatelliteData(satellite,"",aodOrPath)
     site_path=area+"-"+"sites.txt" 
     sites_aod={}
     sites=[]
@@ -183,12 +187,13 @@ def yearMap(path,satellite, year,area):
     else:
         image_name=""
         return "",""
-    sites_aod=getSitesAOD(satellite,year_aod,area,date)
+    sites_aod=getSitesAOD(satellite,year_aod,area,date,"year")
     return image_name,sites_aod 
 
 
 def monthMap(path, satellite1, year, month,area): 
     date=str(year)+str(month)
+    print(date)
     satellite=satellite1
     files = os.listdir(path)
     month_aod = []
@@ -223,7 +228,8 @@ def monthMap(path, satellite1, year, month,area):
                 else:
                     image_name=""
                     return "",""
-                sites_aod=getSitesAOD(satellite,file_path,area,date)
+                strDate=str(year)+"-"+str(month)
+                sites_aod=getSitesAOD(satellite,file_path,area,strDate,"month")
                 return image_name,sites_aod 
             
     #return month_aod.tolist()
@@ -242,10 +248,10 @@ if __name__ == "__main__":
     
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
-    #image_name,sites_aod = monthMap(files_path_modis,"modis", 2006, 1,"china")
+    image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 2006, 1,"china")
     #image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
     #image_name,sites_aod=yearMap(files_path_avhrr,"avhrr",2010,"china")
-    image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"jingjinji")
+    #image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"jingjinji")
     ''' print(month_aod)
     print(sites_aod) '''
     # print("first 10 items in image: {}".format(month_aod[:10]))
