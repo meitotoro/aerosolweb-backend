@@ -25,8 +25,8 @@ class AodResource(object):
         lon = np.linspace(35, 150, 1150)
         lat = np.linspace(15, 60, 450)
         year_aod = readhdf.fileList(files_path,"modis", start, end, temp_lon, temp_lat)
-
         resp.media = { "data": year_aod }
+        
 class ImageResource(object):
     def on_get(self,req,resp,filename):
         print(dir(req))
@@ -47,14 +47,20 @@ class SitesAODResource(object):
         data_path = "data/"+satellite.upper()+"/"
         files=os.listdir(image_path)
         strName=""
-        if req.get_param("month") is None:                       
-            strName=str(year)+"-"+area    
-            print(strName)                  
-        else:           
-            month=int(req.get_param("month"))
-            print(month)
-            strName=str(year)+"-"+str(month)+"-"+area       
+        date=""
+        if req.get_param("month") is None:  
+            if req.get_param("season") is None:
+                flag="year"
+                date=req.get_param("year")                                 
+            else:
+                flag="season"
+                date=req.get_param("year")+"-"+req.get_param("season")              
+        else:
+            flag="month"
+            date=req.get_param("year")+req.get_param("month")                  
+        strName=date+"-"+area      
         name=satellite+"-aod-"+strName+".png"
+        print(name)
         for file in files:
             print(file)
             if not os.path.isdir(file):
@@ -68,12 +74,7 @@ class SitesAODResource(object):
                     sites_aod=json.loads(fh.read())
                     resp.media={"aod":sites_aod,"filename":filename}
                     return
-                    
-        if req.get_param("month") is None:
-            filename,sites_aod=readhdf.yearMap(data_path,satellite,year,area)
-        else:
-            month=int(req.get_param("month"))
-            filename,sites_aod=readhdf.monthMap(data_path,satellite,year, month,area) 
+        filename,sites_aod=readhdf.getMap(data_path,satellite,date,area,flag)
         resp.media={"aod":sites_aod,"filename":filename}     
                     
                   

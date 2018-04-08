@@ -44,7 +44,7 @@ class SatelliteData(object):
                 # Get the data
                 #光学厚度图像301*601
                 data = f["Aerosol_Optical_Depth_Mean: Mean of Daily"]
-                aod_550=data[0:300,0:600]
+                aod_550=data[0:300,0:600][::-1]
             self.aod_550=aod_550   
                   
         else:
@@ -106,13 +106,9 @@ def fileList(path, satellite,time_start, time_end, lon, lat):
     print(year_aod)
     return year_aod
 
-def getSitesAOD(satellite,aodOrPath,area,date,flag):
+def getSitesAOD(satellite,aod,area,date):
     date=str(date)
-    satellite=satellite
-    if flag=="month":
-        satellite_data=SatelliteData(satellite,aodOrPath)
-    elif flag=="year":
-        satellite_data=SatelliteData(satellite,"",aodOrPath)
+    satellite_data=SatelliteData(satellite,"",aod)
     site_path=area+"-"+"sites.txt" 
     sites_aod={}
     sites=[]
@@ -144,7 +140,7 @@ def getSitesAOD(satellite,aodOrPath,area,date,flag):
         print(sites_aod)
     return sites_aod 
 
-def getYearAod(satellite,path,year):
+def getYearAOD(satellite,path,year):
     files=os.listdir(path)
     year_aod=np.array([0])
     count=0     
@@ -169,38 +165,52 @@ def getYearAod(satellite,path,year):
         year_aod[year_aod==0]=-9999            
     return year_aod
 
-    
-def yearMap(path,satellite, year,area):
-    year_aod=getYearAod(satellite,path,year)
-    if not year_aod.any():
-        return "",""
-    date=year
-    if(area=="china"):
-        #全国地理底图的aod数据
-        image_name=image.plotChina_image(year_aod,date,satellite)
-    elif (area=="jingjinji"):
-        #京津冀经度（113,120）,纬度(36,43)
-        image_name=image.plot_VectorClipImage(year_aod,date,113,36,120,42.8,"jingjinji",satellite)
-    elif (area=="changsanjiao"):
-        #长三角经纬度（118,123），纬度（28,34）
-        image_name=image.plot_VectorClipImage(year_aod,date,115.5,27.7,123,34.8,"changsanjiao",satellite)
-    elif(area=="zhusanjiao"):
-        #珠三角经度(111,116)，纬度(21,25)
-        image_name=image.plot_VectorClipImage(year_aod,date,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
+def getSeasonAOD(satellite,year,season,path):
+    #已知卫星、年份和季节（spring,summer等），求季平均AOD
+    files=os.listdir(path)
+    season_aod=np.array([0])
+    count=0
+    years=[year,year,year]
+    if season=="winter":
+        years[1]=year+1
+        years[2]=year+1
+        months=[12,1,2]
+    elif season=="spring":
+        months=[3,4,5]
+    elif season=="summer":
+        months=[6,7,8]
+    elif season=="autumn":
+        months=[9,10,11]
+    for (i,j) in zip(years,months):
+        for file in files:
+            if not os.path.isdir(file):
+                if satellite=="modis":
+                    temp_year = int(file.split('.')[1][15:19])
+                    temp_month=int(file.split('.')[1][19:21])
+                elif satellite=="avhrr":
+                    temp_year=int(file[19:23])
+                    temp_month=int(file[24:26])
+                else:
+                    return
+                file_path = path + file           
+                if (temp_year == i and temp_month==j):
+                    count=count+1
+                    month_aod_550=SatelliteData(satellite,file_path).aod_550
+                    month_aod_550[month_aod_550<0]=0
+                    season_aod=np.add(season_aod,month_aod_550)    
+    if count==0:
+        season_aod=np.array([])
     else:
-        image_name=""
-        return "",""
-    sites_aod=getSitesAOD(satellite,year_aod,area,date,"year")
-    return image_name,sites_aod 
+        season_aod=season_aod/count
+        season_aod[season_aod==0]=-9999            
+    return season_aod
 
-
-def monthMap(path, satellite1, year, month,area): 
+def getMonthAOD(satellite,year,month,path):
     date=str(year)+str(month)
     print(date)
-    satellite=satellite1
     files = os.listdir(path)
-    month_aod = []
-    image_path="aod-image/"
+    month_aod = np.array([0])
+    count=0
     #image_aod=[]
     for file in files:
         if not os.path.isdir(file):
@@ -214,29 +224,45 @@ def monthMap(path, satellite1, year, month,area):
                 return
             file_path = path + file
             if (temp_year == year and temp_month == month):
+                count=count+1
                 satellite_data = SatelliteData(satellite,file_path)
                 month_aod = satellite_data.aod_550
-                if(area=="china"):
-                    #全国地理底图的aod数据
-                    image_name=image.plotChina_image(month_aod,date,satellite)
-                elif (area=="jingjinji"):
-                    #京津冀经度（113,120）,纬度(36,43)
-                    image_name=image.plot_VectorClipImage(month_aod,date,113,36,120,42.8,"jingjinji",satellite)
-                elif (area=="changsanjiao"):
-                    #长三角经纬度（118,123），纬度（28,34）
-                    image_name=image.plot_VectorClipImage(month_aod,date,115.5,27.7,123,34.8,"changsanjiao",satellite)
-                elif(area=="zhusanjiao"):
-                    #珠三角经度(111,116)，纬度(21,25)
-                    image_name=image.plot_VectorClipImage(month_aod,date,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
-                else:
-                    image_name=""
-                    return "",""
-                strDate=str(year)+"-"+str(month)
-                sites_aod=getSitesAOD(satellite,file_path,area,strDate,"month")
-                return image_name,sites_aod 
-            
-    #return month_aod.tolist()
-    return "",""  # 没有找到匹配文件
+    if count==0:
+        month_aod=np.array([])           
+    return month_aod
+
+def getMap(path,satellite, date,area,flag):
+    if flag=="year":
+        year=int(date)
+        aod=getYearAOD(satellite,path,year)
+    elif flag=="month":
+        year=int(date[0:4])
+        month=int(date[4:])
+        aod=getMonthAOD(satellite,year,month,path)
+    elif flag=="season":
+        #season的格式为“2004-spring”
+        year=int(date.split('-')[0])
+        season=date.split('-')[1]
+        aod=getSeasonAOD(satellite,year,season,path)
+    if not aod.any():
+        return "",""
+    if(area=="china"):
+        #全国地理底图的aod数据
+        image_name=image.plotChina_image(aod,date,satellite)
+    elif (area=="jingjinji"):
+        #京津冀经度（113,120）,纬度(36,43)
+        image_name=image.plot_VectorClipImage(aod,date,113,36,120,42.8,"jingjinji",satellite)
+    elif (area=="changsanjiao"):
+        #长三角经纬度（118,123），纬度（28,34）
+        image_name=image.plot_VectorClipImage(aod,date,115.5,27.7,123,34.8,"changsanjiao",satellite)
+    elif(area=="zhusanjiao"):
+        #珠三角经度(111,116)，纬度(21,25)
+        image_name=image.plot_VectorClipImage(aod,date,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
+    else:
+        image_name=""
+        return "",""
+    sites_aod=getSitesAOD(satellite,aod,area,date)
+    return image_name,sites_aod 
 
 
 if __name__ == "__main__":
@@ -251,7 +277,7 @@ if __name__ == "__main__":
     
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
-    image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 2006, 1,"china")
+    image_name,sites_aod = getMap(files_path_avhrr,"avhrr", "2006-spring","china","season")
     #image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
     #image_name,sites_aod=yearMap(files_path_avhrr,"avhrr",2010,"china")
     #image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"jingjinji")

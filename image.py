@@ -13,8 +13,9 @@ myfont=FontProperties(fname="/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.
 matplotlib.rcParams["axes.unicode_minus"]=False
 
 def plotChina_image(data,date,satellite):
-    date=str(date)
-    if len(date)>4:
+    if date.find('-')!=-1 or len(date)==4:
+        date=date
+    else:
         year=date[0:4]
         month=date[4:]
         date=year+"-"+month 
@@ -90,11 +91,12 @@ def plotChina_image(data,date,satellite):
     return filename
     
 def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
-    date=str(date)
-    if len(date)==6:
-        year=date[0:3]
-        month=date[4:5]
-        date=year+"-"+month
+    if date.find('-')!=-1 or len(date)==4:
+        date=date
+    else:
+        year=date[0:4]
+        month=date[4:]
+        date=year+"-"+month 
     """从aod数据生成图像"""
     data[data > 1.5] = 1.5  #modis原始数据经度35-150,0.1度一个像素，纬度15-60
     if satellite=="modis":
