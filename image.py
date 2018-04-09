@@ -28,34 +28,30 @@ def plotChina_image(data,date,satellite):
     max_value = 1.6
     # create figure and axes instances
     fig = plt.figure()
-    if satellite=="modis":
-        m = Basemap(
+    m = Basemap(
         projection='merc',
         llcrnrlon=70,
         llcrnrlat=15,
         urcrnrlon=138,
         urcrnrlat=57,
         resolution='l')
-        parallels = np.arange(15, 57, 10.)
-        meridians = np.arange(70, 138, 10.) 
-        lats, lons = np.mgrid[57:15:-0.1, 70:138:0.1]
+    parallels = np.arange(15, 57, 10.)
+    meridians = np.arange(70, 138, 10.) 
+    lats, lons = np.mgrid[57:15:-0.1, 70:138:0.1]
+    if satellite=="modis":       
         # add title
         plt.title('MODIS AOD_'+date)
         filename="modis-aod-"+date+"-china.png"
     elif satellite=="avhrr": #avhrr数据经度75-135,0.1度一个像素，纬度15-45
-        m = Basemap(
-        projection='merc',
-        llcrnrlon=70,
-        llcrnrlat=15,
-        urcrnrlon=138,
-        urcrnrlat=57,
-        resolution='l')
-        parallels = np.arange(15, 57, 10.)
-        meridians = np.arange(70, 138, 10.)  
         lats, lons = np.mgrid[45:15:-0.1, 75:135:0.1]  
         # add title
         plt.title('AVHRR AOD_'+date)
-        filename="avhrr-aod-"+date+"-china.png"     
+        filename="avhrr-aod-"+date+"-china.png"   
+    elif satellite=='fy':
+        lats, lons = np.mgrid[57:15:-0.05, 70:138:0.05]
+        plt.title('FY AOD_'+date)
+        filename="fy-aod-"+date+"-china.png"
+
     # read shapefile.生成全国底图的image
     m.readshapefile("shape_files/ChinaProvince", "ChinaProvince")
     # draw coastlines, state and country boundaries, edge of map.
@@ -85,6 +81,8 @@ def plotChina_image(data,date,satellite):
         plt.savefig("aod-image/modis-aod-%s-china.png" % date, format = 'png',bbox_inches='tight')
     elif satellite=="avhrr":
         plt.savefig("aod-image/avhrr-aod-%s-china.png" % date, format = 'png',bbox_inches='tight')
+    elif satellite=="fy":
+        plt.savefig("aod-image/fy-aod-%s-china.png" % date, format = 'png',bbox_inches='tight')
     else:
         return    
     plt.close("all")
@@ -98,8 +96,8 @@ def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
         month=date[4:]
         date=year+"-"+month 
     """从aod数据生成图像"""
-    data[data > 1.5] = 1.5  #modis原始数据经度35-150,0.1度一个像素，纬度15-60
-    if satellite=="modis":
+    data[data > 1.5] = 1.5  
+    if satellite=="modis":#modis原始数据经度35-150,0.1度一个像素，纬度15-60
         minrow_index=int(600-10*maxLat)
         maxrow_index=int(600-10*minLat)
         mincolumn_index=int(10*minLon-350)
@@ -109,6 +107,11 @@ def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
         maxrow_index=int(450-10*minLat)
         mincolumn_index=int(10*minLon-750)
         maxcolumn_index=int(10*maxLon-750)
+    elif satellite=="fy": #fy数据纬度15-57，经度70-138度,分辨率0.05度
+        minrow_index=int(1140-20*maxLat)
+        maxrow_index=int(1140-20*minLat)
+        mincolumn_index=int(20*minLon-1400)
+        maxcolumn_index=int(20*maxLon-1400)
     else:
         return        
     data = data[minrow_index:maxrow_index, mincolumn_index:maxcolumn_index]  #切片后的数据

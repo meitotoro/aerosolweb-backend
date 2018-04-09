@@ -45,6 +45,13 @@ class SatelliteData(object):
                 #光学厚度图像301*601
                 data = f["Aerosol_Optical_Depth_Mean: Mean of Daily"]
                 aod_550=data[0:300,0:600][::-1]
+            elif (satellite=="fy"):
+                #切片后的fy数据纬度15-57，经度70-138度,分辨率0.05度
+                f=h5py.File(path,'r')
+                print("Keys: %s" % f.keys())
+                #光学厚度图像676*451
+                data = f["Ocean_Aod_550"] 
+                aod_550=data[660:1500,5000:6360]* 0.001
             self.aod_550=aod_550   
                   
         else:
@@ -54,16 +61,24 @@ class SatelliteData(object):
         '''在modis图像中找到与指定坐标最接近的坐标点索引，以及该点的坐标值'''
         if self.satellite=="modis":
             y_index = int(round((lon - 35) / 0.1))
-            x_index = int(round((lat - 15) / 0.1))
+            x_index = int(round((60-lat) / 0.1))
             index = (x_index, y_index)
             print(self.aod_550[index])
             return index, self.aod_550[index]
         elif self.satellite=="avhrr":
             y_index = int(round((lon - 75) / 0.1))
-            x_index = int(round((lat - 15) / 0.1))
+            x_index = int(round((45-lat) / 0.1))
             index = (x_index, y_index)
             print(self.aod_550[index])
             return index, self.aod_550[index]
+        elif self.satellite=="fy":
+            y_index=int(round((lon-70)/0.05))
+            x_index= int(round((57-lat) / 0.05))
+            index=(x_index,y_index)
+            print(self.aod_550[index])
+            return index,self.aod_550[index]
+
+        
 
 '''
 遍历文件夹下的所有HDF文件，拿到对应的时间段范围的HDF文件列表
@@ -122,7 +137,9 @@ def getSitesAOD(satellite,aod,area,date):
         for key,value in site_json.items():
             lon=value[0]
             lat=value[1]
-            index, aod_550 = satellite_data.locate(lon, lat)                      
+            index, aod_550 = satellite_data.locate(lon, lat) 
+            if aod_550<0:
+                aod_550=0                    
             locate.append(value)
             sites.append(key)
             aod.append(aod_550)
@@ -150,6 +167,8 @@ def getYearAOD(satellite,path,year):
                 temp_year = int(file.split('.')[1][15:19])
             elif satellite=="avhrr":
                 temp_year=int(file[19:23])   
+            elif satellite=="fy":
+                temp_year=int(file[31:35])
             else:
                 return
             file_path = path + file           
@@ -190,6 +209,9 @@ def getSeasonAOD(satellite,year,season,path):
                 elif satellite=="avhrr":
                     temp_year=int(file[19:23])
                     temp_month=int(file[24:26])
+                elif satellite=="fy":
+                    temp_year=int(file[31:35])
+                    temp_month=int(file[35:37])
                 else:
                     return
                 file_path = path + file           
@@ -220,6 +242,9 @@ def getMonthAOD(satellite,year,month,path):
             elif satellite=="avhrr":
                 temp_year=int(file[19:23])
                 temp_month=int(file[24:26])
+            elif satellite=="fy":
+                temp_year=int(file[31:35])
+                temp_month=int(file[35:37])
             else:
                 return
             file_path = path + file
@@ -268,6 +293,7 @@ def getMap(path,satellite, date,area,flag):
 if __name__ == "__main__":
     files_path_modis = "data/MODIS/"
     files_path_avhrr="data/AVHRR/"
+    files_path_fy="data/FY3A/"
     #页面传过来站点名称或者经纬度信息
     temp_lon = 50
     temp_lat = 40
@@ -277,7 +303,7 @@ if __name__ == "__main__":
     
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
-    image_name,sites_aod = getMap(files_path_avhrr,"avhrr", "2006-spring","china","season")
+    image_name,sites_aod = getMap(files_path_fy,"fy", "2011-spring","china","season")
     #image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
     #image_name,sites_aod=yearMap(files_path_avhrr,"avhrr",2010,"china")
     #image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"jingjinji")
