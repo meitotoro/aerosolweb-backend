@@ -37,6 +37,7 @@ class SatelliteData(object):
                 obj = SD.SD(path, SD.SDC.READ)
                 #光学厚度图像676*451
                 aod_550 = obj.select("SRAP_AOD_MONTH_AVE at 550nm").get() * 0.001
+                
             elif(satellite=="avhrr"):                
                 f = h5py.File(path, 'r')
                 # List all groups
