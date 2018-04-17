@@ -8,17 +8,44 @@ from matplotlib.patches import PathPatch
 import matplotlib
 from matplotlib.font_manager import *
 import matplotlib.pyplot as plt
+from enum import Enum,unique
+import json
 
 myfont=FontProperties(fname="/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc")
 matplotlib.rcParams["axes.unicode_minus"]=False
-
-def plotChina_image(data,date,satellite):
-    if date.find('-')!=-1 or len(date)==4:
-        date=date
-    else:
+def creatDateString(date):
+    '''将时间“2004”“200401”“2004-spring”转换为字符串格式'''
+    if date.find('-')==-1 and len(date)!=4:
         year=date[0:4]
         month=date[4:]
         date=year+"-"+month 
+    return date
+
+def clipImage(data,satellite,minLon,minLat,maxLon,maxLat):
+    data[data > 1.5] = 1.5  
+    if satellite=="modis":#modis原始数据经度35-150,0.1度一个像素，纬度15-60
+        minrow_index=int(600-10*maxLat)
+        maxrow_index=int(600-10*minLat)
+        mincolumn_index=int(10*minLon-350)
+        maxcolumn_index=int(10*maxLon-350)
+    elif satellite=="avhrr":
+        minrow_index=int(450-10*maxLat)
+        maxrow_index=int(450-10*minLat)
+        mincolumn_index=int(10*minLon-750)
+        maxcolumn_index=int(10*maxLon-750)
+    elif satellite=="fy": #fy数据纬度15-57，经度70-138度,分辨率0.05度
+        minrow_index=int(1140-20*maxLat)
+        maxrow_index=int(1140-20*minLat)
+        mincolumn_index=int(20*minLon-1400)
+        maxcolumn_index=int(20*maxLon-1400)
+    else:
+        return        
+    data = data[minrow_index:maxrow_index, mincolumn_index:maxcolumn_index]  #切片后的数据
+    img_data = np.ma.masked_equal(data, -9.999)
+    return img_data
+
+def plotChina_image(data,date,satellite):
+    date=creatDateString(date)
     """从aod数据生成图像"""
     data[data > 1.5] = 1.5  
     if satellite=="modis":#原始数据经度35-150,0.1度一个像素，纬度15-60
@@ -87,35 +114,17 @@ def plotChina_image(data,date,satellite):
         return    
     plt.close("all")
     return filename
-    
+
+def readSitesCor():
+    with open("area-site.txt",'r') as load_f:
+        load_dict = json.load(load_f)
+        print(load_dict)
+        return load_dict
+
 def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
-    if date.find('-')!=-1 or len(date)==4:
-        date=date
-    else:
-        year=date[0:4]
-        month=date[4:]
-        date=year+"-"+month 
+    date=creatDateString(date)
     """从aod数据生成图像"""
-    data[data > 1.5] = 1.5  
-    if satellite=="modis":#modis原始数据经度35-150,0.1度一个像素，纬度15-60
-        minrow_index=int(600-10*maxLat)
-        maxrow_index=int(600-10*minLat)
-        mincolumn_index=int(10*minLon-350)
-        maxcolumn_index=int(10*maxLon-350)
-    elif satellite=="avhrr":
-        minrow_index=int(450-10*maxLat)
-        maxrow_index=int(450-10*minLat)
-        mincolumn_index=int(10*minLon-750)
-        maxcolumn_index=int(10*maxLon-750)
-    elif satellite=="fy": #fy数据纬度15-57，经度70-138度,分辨率0.05度
-        minrow_index=int(1140-20*maxLat)
-        maxrow_index=int(1140-20*minLat)
-        mincolumn_index=int(20*minLon-1400)
-        maxcolumn_index=int(20*maxLon-1400)
-    else:
-        return        
-    data = data[minrow_index:maxrow_index, mincolumn_index:maxcolumn_index]  #切片后的数据
-    img_data = np.ma.masked_equal(data, -9.999)
+    data=clipImage(data,satellite,minLon,minLat,maxLon,maxLat)
     min_value = 0
     max_value = 1.6
     # create figure and axes instances
@@ -133,93 +142,32 @@ def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
     m.readshapefile(shapefile_path, name)
     parallels=[]
     meridians=[]
-    jingjinji_sites={
-        #'beijing':[u"北京",116.2,40.2],
-        'tianjin':[u"天津",117,39.13],
-        'tangshan':[u'唐山',118.02,39.63],
-        'qinhuangdao':[u'秦皇岛',119.,39.95],
-        'chengde':[u'承德',117.2,41.1],
-        'zhangjiakou':[u'张家口',114.87,40.82],
-        'baoding':[u'保定',115,38.85],
-        'langfang':[u'廊坊',116.3,39.2],
-        'cangzhou':[u'沧州',116.43,38.23],
-        'hengshui':[u'衡水',115.52,37.62],
-        'shijiazhuang':[u'石家庄',114.18,38.03],
-        'xingtai':[u'邢台',114.48,37.05],
-        'handan':[u'邯郸',114.47,36.4]
-    }
-    changsanjiao_sites={
-        'yancheng':[u"盐城",120,33.35],
-        'nanjing':[u'南京',118.49,31.95],
-        'yangzhou':[u'扬州',119.22,32.52],
-        'taizhou':[u'泰州',119.93,32.46],
-        'nantong':[u'南通',120.89,31.98],
-        'changzhou':[u'常州',119.17,31.42],
-        'wuxi':[u'无锡',120.11,31.49],
-        'suzhou':[u'苏州',120.48,31.19],
-        'shanghai':[u'上海',121.07,31],
-        'huzhou':[u'湖州',119.69,30.69],
-        'jiaxing':[u'嘉兴',120.55,30.60],
-        'hangzhou':[u'杭州',119.2,29.97],
-        'shaoxing':[u'绍兴',120.38,29.73],
-        'jinhua':[u'金华',119.65,29.08],
-        'ningbo':[u'宁波',121.15,29.77],
-        'taizhou':[u'台州',120.92,28.76],
-        'chuzhou':[u'滁州',117.8,32.5],
-        'hefei':[u'合肥',117.03,31.82],
-        'maanshan':[u'马鞍山',118.21,31.47],
-        'wuhu':[u'芜湖',118.1,31.1],
-        'tongling':[u'铜陵',117.71,30.85],
-        'anqing':[u'安庆',116.26,30.44],
-        'chizhou':[u'池州',117.09,30.26],
-        'xuancheng':[u'宣城',118.53,30.65],
-        'zhengjiang':[u'镇江',119.23,32.]
-    }
-    zhusanjiao_sites={        
-        'guangzhou':[u'广州',113.4,23.3],
-        'foshan':[u'佛山',112.9,23],
-        'huizhou':[u'惠州',114.3,23.2],
-        'jiangmen':[u'江门',112.6,22.3],
-        'shenzhen':[u'深圳',113.9,22.6],
-        'zhongshan':[u'中山',113.29,22.5],
-        'zhuhai':[u'珠海',113.15,22.1],
-        'zhaoqing':[u'肇庆',112.2,23.5],
-        'dongguan':[u'东莞',113.75,22.9]
-    }
+    sitesCoors=readSitesCor()
+    sites=sitesCoors[name]    
+    for site in sites:
+        x,y=sites[site][0],sites[site][1]     
+        plt.text(x,y,site,FontProperties=myfont,color="black",fontsize=7)  
     if name=='jingjinji':
         parallels=np.arange(36,43,2)
         meridians=np.arange(114,121,2)
         beijing_x,beijing_y=m(116.2,40.2)
-        plt.text(beijing_x,beijing_y,u'北京',FontProperties=myfont,color="red",fontsize=8)        
-        for key in jingjinji_sites:
-            value=jingjinji_sites[key]
-            text_site=value[0]
-            x,y=m(value[1],value[2])      
-            plt.text(x,y,text_site,FontProperties=myfont,color="black",fontsize=7)              
+        plt.text(beijing_x,beijing_y,u'北京',FontProperties=myfont,color="red",fontsize=8)         
     elif name=='zhusanjiao':
         parallels=np.arange(22,25,1)
         meridians=np.arange(111,116,1)
-        for key in zhusanjiao_sites:
-            value=zhusanjiao_sites[key]
-            text_site=value[0]
-            x,y=m(value[1],value[2]) 
-            plt.text(x,y,text_site,FontProperties=myfont,color="black",fontsize=7)
     else:
         parallels=np.arange(28,35,2)
-        meridians=np.arange(116,124,2)
-        for key in changsanjiao_sites:
-            value=changsanjiao_sites[key]
-            text_site=value[0]
-            x,y=m(value[1],value[2])
-            plt.text(x,y,text_site,FontProperties=myfont,color="black",fontsize=7)
-    
+        meridians=np.arange(116,124,2)                
     m.drawparallels(parallels, linewidth=0.5,dashes=[5, 2,2,2], labels=[1, 0, 0, 0], fontsize=10)
     m.drawmeridians(meridians, linewidth=0.5,dashes=[5, 2,2,2], labels=[0, 0, 0, 1], fontsize=10)
-    lats, lons = np.mgrid[maxLat:minLat:-0.1, minLon:maxLon:0.1]
-    # draw filled contours.
-    clevs = np.arange(min_value, max_value, 0.1)
+    if satellite=="fy":
+        lats, lons = np.mgrid[maxLat:minLat:-0.05, minLon:maxLon:0.05]
+        clevs = np.arange(min_value, max_value, 0.05)
+    else:
+        lats, lons = np.mgrid[maxLat:minLat:-0.1, minLon:maxLon:0.1]
+        clevs = np.arange(min_value, max_value, 0.1)
     cs = m.contourf(
-        lons, lats, img_data, clevs, cmap=plt.cm.rainbow, latlon=True)
+        lons, lats, data, clevs, cmap=plt.cm.rainbow, latlon=True)
     
     #生成区域光学厚度图
     #读取矢量数据

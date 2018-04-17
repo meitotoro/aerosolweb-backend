@@ -293,7 +293,7 @@ def getMap(path,satellite, date,area,flag):
 if __name__ == "__main__":
     files_path_modis = "data/MODIS/"
     files_path_avhrr="data/AVHRR/"
-    files_path_fy="data/FY3A/"
+    files_path_fy="data/FY/"
     #页面传过来站点名称或者经纬度信息
     temp_lon = 50
     temp_lat = 40
@@ -303,8 +303,8 @@ if __name__ == "__main__":
     
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
-    image_name,sites_aod = getMap(files_path_fy,"fy", "2011-spring","china","season")
-    #image_name,sites_aod = monthMap(files_path_avhrr,"avhrr", 1996, 1,"zhusanjiao")
+    #image_name,sites_aod = getMap(files_path_fy,"fy", "2011-spring","jingjinji","season")
+    image_name,sites_aod = getMap(files_path_modis,"modis", "200503","zhusanjiao","month")
     #image_name,sites_aod=yearMap(files_path_avhrr,"avhrr",2010,"china")
     #image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"jingjinji")
     ''' print(month_aod)
