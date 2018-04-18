@@ -27,17 +27,20 @@ class AodPoint(object):
         return "\n{}-{} {}".format(self.year, self.month, self.aod)
 
 class SatelliteData(object):
-    def __init__(self,satellite,path,_aod550=np.array([])):
+    #读取hdf数据，裁切数据
+    def __init__(self,satellite,path,area,_aod550=np.array([])):
         self.path=path
         print(path)
         self.satellite=satellite
+        self.area=area
         self.aod_550=np.array([0])
+        self.resolution=0.1
         if not _aod550.any():            
-            if(satellite=="modis"):
+            if(satellite=="modis"):                
                 obj = SD.SD(path, SD.SDC.READ)
                 #光学厚度图像676*451
                 aod_550 = obj.select("SRAP_AOD_MONTH_AVE at 550nm").get() * 0.001
-                
+                print(type(aod_550))
             elif(satellite=="avhrr"):                
                 f = h5py.File(path, 'r')
                 # List all groups
@@ -45,40 +48,61 @@ class SatelliteData(object):
                 # Get the data
                 #光学厚度图像301*601
                 data = f["Aerosol_Optical_Depth_Mean: Mean of Daily"]
-                aod_550=data[0:300,0:600][::-1]
+                #aod_550=data[0:300,0:600][::-1]
+                aod_550=data[:][::-1]
+                print(type(aod_550))
             elif (satellite=="fy"):
+                self.resolution=0.05
                 #切片后的fy数据纬度15-57，经度70-138度,分辨率0.05度
                 f=h5py.File(path,'r')
                 print("Keys: %s" % f.keys())
                 #光学厚度图像676*451
                 data = f["Ocean_Aod_550"] 
-                aod_550=data[660:1500,5000:6360]* 0.001
-            self.aod_550=aod_550   
-                  
+                #aod_550=data[660:1500,5000:6360]* 0.001
+                aod_550=data[:]*0.001
+                print(type(aod_550))
+            row1,row2,colum1,colum2=self.getRowColums()
+            aod_550=aod_550[row1:row2,colum1:colum2]
+            self.aod_550=aod_550                     
         else:
             self.aod_550=_aod550 
+
+    def getAreaLatsLons(self):
+        with open("area-coors.txt",'r') as load_a:
+            load_coors = json.load(load_a)
+            coors=load_coors[self.area]
+            print(coors)
+            area_lats=coors["lats"]
+            area_lons=coors["lons"]
+            return area_lats,area_lons
+
+    def getRowColums(self):
+        area_lats,area_lons=self.getAreaLatsLons()
+        sat_lats,sat_lons,resolution=self.getSatLatsLons()
+        row_index1=(sat_lats[1]-area_lats[1])/resolution
+        row_index2=(sat_lats[1]-area_lats[0])/resolution
+        colum_index1=(area_lons[0]-sat_lons[0])/resolution
+        colum_index2=(area_lons[1]-sat_lons[0])/resolution
+        return int(row_index1),int(row_index2),int(colum_index1),int(colum_index2)
     
+    def getSatLatsLons(self):
+        with open("satellite-coors.txt") as load_s:
+            load_coors=json.load(load_s)
+            coors=load_coors[self.satellite]
+            resolution=coors["resolution"]
+            sat_lats=coors["lats"]
+            sat_lons=coors["lons"]
+            return sat_lats,sat_lons,resolution 
+
     def locate(self, lon, lat):
         '''在modis图像中找到与指定坐标最接近的坐标点索引，以及该点的坐标值'''
-        if self.satellite=="modis":
-            y_index = int(round((lon - 35) / 0.1))
-            x_index = int(round((60-lat) / 0.1))
-            index = (x_index, y_index)
-            print(self.aod_550[index])
-            return index, self.aod_550[index]
-        elif self.satellite=="avhrr":
-            y_index = int(round((lon - 75) / 0.1))
-            x_index = int(round((45-lat) / 0.1))
-            index = (x_index, y_index)
-            print(self.aod_550[index])
-            return index, self.aod_550[index]
-        elif self.satellite=="fy":
-            y_index=int(round((lon-70)/0.05))
-            x_index= int(round((57-lat) / 0.05))
-            index=(x_index,y_index)
-            print(self.aod_550[index])
-            return index,self.aod_550[index]
-
+        area_lats,area_lons=self.getAreaLatsLons()
+        resolution=self.resolution      
+        y_index = int(round((lon - area_lons[0]) / resolution))
+        x_index = int(round((area_lats[1]-lat) / resolution))
+        index = (x_index, y_index)
+        print(self.aod_550[index])
+        return index, self.aod_550[index]
         
 
 '''
@@ -158,7 +182,7 @@ def getSitesAOD(satellite,aod,area,date):
         print(sites_aod)
     return sites_aod 
 
-def getYearAOD(satellite,path,year):
+def getYearAOD(satellite,path,year,area):
     files=os.listdir(path)
     year_aod=np.array([0])
     count=0     
@@ -175,7 +199,7 @@ def getYearAOD(satellite,path,year):
             file_path = path + file           
             if (temp_year == year):
                 count=count+1
-                month_aod_550=SatelliteData(satellite,file_path).aod_550
+                month_aod_550=SatelliteData(satellite,file_path,area).aod_550
                 month_aod_550[month_aod_550<0]=0
                 year_aod=np.add(year_aod,month_aod_550)
     if count==0:
@@ -185,7 +209,7 @@ def getYearAOD(satellite,path,year):
         year_aod[year_aod==0]=-9999            
     return year_aod
 
-def getSeasonAOD(satellite,year,season,path):
+def getSeasonAOD(satellite,year,season,path,area):
     #已知卫星、年份和季节（spring,summer等），求季平均AOD
     files=os.listdir(path)
     season_aod=np.array([0])
@@ -218,7 +242,7 @@ def getSeasonAOD(satellite,year,season,path):
                 file_path = path + file           
                 if (temp_year == i and temp_month==j):
                     count=count+1
-                    month_aod_550=SatelliteData(satellite,file_path).aod_550
+                    month_aod_550=SatelliteData(satellite,file_path,area).aod_550
                     month_aod_550[month_aod_550<0]=0
                     season_aod=np.add(season_aod,month_aod_550)    
     if count==0:
@@ -228,7 +252,7 @@ def getSeasonAOD(satellite,year,season,path):
         season_aod[season_aod==0]=-9999            
     return season_aod
 
-def getMonthAOD(satellite,year,month,path):
+def getMonthAOD(satellite,year,month,path,area):
     date=str(year)+str(month)
     print(date)
     files = os.listdir(path)
@@ -251,8 +275,9 @@ def getMonthAOD(satellite,year,month,path):
             file_path = path + file
             if (temp_year == year and temp_month == month):
                 count=count+1
-                satellite_data = SatelliteData(satellite,file_path)
+                satellite_data = SatelliteData(satellite,file_path,area)
                 month_aod = satellite_data.aod_550
+                break
     if count==0:
         month_aod=np.array([])           
     return month_aod
@@ -260,16 +285,16 @@ def getMonthAOD(satellite,year,month,path):
 def getMap(path,satellite, date,area,flag):
     if flag=="year":
         year=int(date)
-        aod=getYearAOD(satellite,path,year)
+        aod=getYearAOD(satellite,path,year,area)
     elif flag=="month":
         year=int(date[0:4])
         month=int(date[4:])
-        aod=getMonthAOD(satellite,year,month,path)
+        aod=getMonthAOD(satellite,year,month,path,area)
     elif flag=="season":
         #season的格式为“2004-spring”
         year=int(date.split('-')[0])
         season=date.split('-')[1]
-        aod=getSeasonAOD(satellite,year,season,path)
+        aod=getSeasonAOD(satellite,year,season,path,area)
     if not aod.any():
         return "",""
     if(area=="china"):

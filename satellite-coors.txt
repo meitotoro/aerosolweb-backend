@@ -1,0 +1,17 @@
+{
+    "modis":{
+        "resolution":0.1,
+        "lons":[35,150],
+        "lats":[15,60]
+    },
+    "avhrr":{
+        "resolution":0.1,
+        "lons":[75,135],
+        "lats":[15,45]
+    },
+    "fy":{
+        "resolution":0.1,
+        "lons":[-180,180],
+        "lats":[-90,90]
+    }
+}
