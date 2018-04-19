@@ -147,15 +147,17 @@ def plot_VectorClipImage(data,date,satellite,area):
         urcrnrlat=lats[1],
         resolution='l')
     shapefile_path="shape_files/"+area+"/"+area
-    m.readshapefile(shapefile_path, area)
+    #m.readshapefile(shapefile_path, area)
     parallels=[]
     meridians=[]
     sitesCoors=readSitesCor()
     sites=sitesCoors[area]    
     for site in sites:
-        x,y=sites[site][0],sites[site][1]
-        print(type(site))     
-        plt.text(x,y,site.decode("unicode-escape"),FontProperties=myfont,color="black",fontsize=7)  
+        x,y=m(sites[site][0],sites[site][1])
+        print(x,y)
+        print(type(site))    
+        print(site) 
+        plt.text(x,y,site,FontProperties=myfont,color="black",fontsize=7)  
     parallels=np.arange(int(lats[0]),int(lats[1]),1)
     meridians=np.arange(int(lons[0]),int(lons[1]),1)
     if area=='jingjinji':      
@@ -176,7 +178,7 @@ def plot_VectorClipImage(data,date,satellite,area):
         clevs = np.arange(min_value, max_value, 0.1)
     cs = m.contourf(
         lons, lats, data, clevs, cmap=plt.cm.rainbow, latlon=True)
-    
+    plt.show()
     #生成区域光学厚度图
     #读取矢量数据
     shp_path="shape_files/"+area+"/"+area+".shp"
