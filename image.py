@@ -155,7 +155,7 @@ def plot_VectorClipImage(data,date,satellite,area):
     for site in sites:
         x,y=sites[site][0],sites[site][1]
         print(type(site))     
-        plt.text(x,y,site.encode("utf8"),FontProperties=myfont,color="black",fontsize=7)  
+        plt.text(x,y,site.decode("unicode-escape"),FontProperties=myfont,color="black",fontsize=7)  
     parallels=np.arange(int(lats[0]),int(lats[1]),1)
     meridians=np.arange(int(lons[0]),int(lons[1]),1)
     if area=='jingjinji':      
