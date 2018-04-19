@@ -148,7 +148,7 @@ def fileList(path, satellite,time_start, time_end, lon, lat):
 
 def getSitesAOD(satellite,aod,area,date):
     date=str(date)
-    satellite_data=SatelliteData(satellite,"",aod)
+    satellite_data=SatelliteData(satellite,"",area,aod)
     site_path=area+"-"+"sites.txt" 
     sites_aod={}
     sites=[]
@@ -302,13 +302,13 @@ def getMap(path,satellite, date,area,flag):
         image_name=image.plotChina_image(aod,date,satellite)
     elif (area=="jingjinji"):
         #京津冀经度（113,120）,纬度(36,43)
-        image_name=image.plot_VectorClipImage(aod,date,113,36,120,42.8,"jingjinji",satellite)
+        image_name=image.plot_VectorClipImage(aod,date,satellite,area)
     elif (area=="changsanjiao"):
         #长三角经纬度（118,123），纬度（28,34）
-        image_name=image.plot_VectorClipImage(aod,date,115.5,27.7,123,34.8,"changsanjiao",satellite)
+        image_name=image.plot_VectorClipImage(aod,date,satellite,area)
     elif(area=="zhusanjiao"):
         #珠三角经度(111,116)，纬度(21,25)
-        image_name=image.plot_VectorClipImage(aod,date,111.2,21.5,115.5,24.5,"zhusanjiao",satellite)
+        image_name=image.plot_VectorClipImage(aod,date,satellite,area)
     else:
         image_name=""
         return "",""

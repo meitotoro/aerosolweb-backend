@@ -21,7 +21,7 @@ def creatDateString(date):
         date=year+"-"+month 
     return date
 
-def clipImage(data,satellite,minLon,minLat,maxLon,maxLat):
+""" def clipImage(data,satellite,minLon,minLat,maxLon,maxLat):
     data[data > 1.5] = 1.5  
     if satellite=="modis":#modis原始数据经度35-150,0.1度一个像素，纬度15-60
         minrow_index=int(600-10*maxLat)
@@ -42,7 +42,7 @@ def clipImage(data,satellite,minLon,minLat,maxLon,maxLat):
         return        
     data = data[minrow_index:maxrow_index, mincolumn_index:maxcolumn_index]  #切片后的数据
     img_data = np.ma.masked_equal(data, -9.999)
-    return img_data
+    return img_data """
 
 def plotChina_image(data,date,satellite):
     date=creatDateString(date)
@@ -121,10 +121,18 @@ def readSitesCor():
         print(load_dict)
         return load_dict
 
-def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
+def readAreaCor(area):
+    with open("area-coors.txt") as load_f:
+        load_dict=json.load(load_f)
+        lons=load_dict[area]["lons"]
+        lats=load_dict[area]["lats"]
+        return lats,lons
+
+def plot_VectorClipImage(data,date,satellite,area):
     date=creatDateString(date)
+    lats,lons=readAreaCor(area)
     """从aod数据生成图像"""
-    data=clipImage(data,satellite,minLon,minLat,maxLon,maxLat)
+    #data=clipImage(data,satellite,minLon,minLat,maxLon,maxLat)
     min_value = 0
     max_value = 1.6
     # create figure and axes instances
@@ -133,35 +141,35 @@ def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
     ax = plt.gca()
     m = Basemap(
         projection='merc',
-        llcrnrlon=minLon,
-        llcrnrlat=minLat,
-        urcrnrlon=maxLon,
-        urcrnrlat=maxLat,
+        llcrnrlon=lons[0],
+        llcrnrlat=lats[0],
+        urcrnrlon=lons[1],
+        urcrnrlat=lats[1],
         resolution='l')
-    shapefile_path="shape_files/"+name+"/"+name
-    m.readshapefile(shapefile_path, name)
+    shapefile_path="shape_files/"+area+"/"+area
+    m.readshapefile(shapefile_path, area)
     parallels=[]
     meridians=[]
     sitesCoors=readSitesCor()
-    sites=sitesCoors[name]    
+    sites=sitesCoors[area]    
     for site in sites:
-        x,y=sites[site][0],sites[site][1]     
-        plt.text(x,y,site,FontProperties=myfont,color="black",fontsize=7)  
-    if name=='jingjinji':
-        parallels=np.arange(36,43,2)
-        meridians=np.arange(114,121,2)
+        x,y=sites[site][0],sites[site][1]
+        print(type(site))     
+        plt.text(x,y,site.encode("utf8"),FontProperties=myfont,color="black",fontsize=7)  
+    parallels=np.arange(int(lats[0]),int(lats[1]),1)
+    meridians=np.arange(int(lons[0]),int(lons[1]),1)
+    if area=='jingjinji':      
         beijing_x,beijing_y=m(116.2,40.2)
-        plt.text(beijing_x,beijing_y,u'北京',FontProperties=myfont,color="red",fontsize=8)         
-    elif name=='zhusanjiao':
-        parallels=np.arange(22,25,1)
-        meridians=np.arange(111,116,1)
-    else:
-        parallels=np.arange(28,35,2)
-        meridians=np.arange(116,124,2)                
+        plt.text(beijing_x,beijing_y,u'北京',FontProperties=myfont,color="red",fontsize=8)                        
     m.drawparallels(parallels, linewidth=0.5,dashes=[5, 2,2,2], labels=[1, 0, 0, 0], fontsize=10)
     m.drawmeridians(meridians, linewidth=0.5,dashes=[5, 2,2,2], labels=[0, 0, 0, 1], fontsize=10)
+    maxLat=lats[1]
+    minLat=lats[0]
+    maxLon=lons[1]-0.1
+    minLon=lons[0]
+    lats, lons = np.mgrid[maxLat:minLat:-0.1, minLon:maxLon:0.1]
     if satellite=="fy":
-        lats, lons = np.mgrid[maxLat:minLat:-0.05, minLon:maxLon:0.05]
+        lats, lons = np.mgrid[maxLat:minLat:-0.05, maxLon:minLon:0.05]
         clevs = np.arange(min_value, max_value, 0.05)
     else:
         lats, lons = np.mgrid[maxLat:minLat:-0.1, minLon:maxLon:0.1]
@@ -171,7 +179,7 @@ def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
     
     #生成区域光学厚度图
     #读取矢量数据
-    shp_path="shape_files/"+name+"/"+name+".shp"
+    shp_path="shape_files/"+area+"/"+area+".shp"
     #shp_path="shape_files/Zhusanjiao_Cities/Dongguan.shp"
     sf=shapefile.Reader(shp_path)
     #生成京津冀的边缘区域clip
@@ -201,8 +209,8 @@ def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
     cbar = m.colorbar(cs, location='bottom', pad="8%",ticks=[0.0,0.3,0.6,0.9,1.2,1.5])
     cbar.set_label('Aerosol Optical Depth')
     # add title
-    name=name.capitalize()
-    plt.title(name+'_'+satellite.upper()+'_'+'AOD_'+date)
+    area=area.capitalize()
+    plt.title(area+'_'+satellite.upper()+'_'+'AOD_'+date)
     plt.margins()
     fig.canvas.draw()
     width, height = fig.canvas.get_width_height()
@@ -212,7 +220,7 @@ def plot_VectorClipImage(data,date,minLon,minLat,maxLon,maxLat,name,satellite):
     data = np.roll(data, 3, axis=2)
    
     #plt.show()
-    filename=satellite+"-aod-"+date+"-"+name.lower()+".png"
+    filename=satellite+"-aod-"+date+"-"+area.lower()+".png"
     #fig.tight_layout()
     plt.savefig("aod-image/"+filename, format = 'png',bbox_inches='tight')
     plt.close("all")
