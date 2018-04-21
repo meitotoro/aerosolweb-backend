@@ -48,8 +48,8 @@ def plotChina_image(data,date,satellite):
     date=creatDateString(date)
     """从aod数据生成图像"""
     data[data > 1.5] = 1.5  
-    if satellite=="modis":#原始数据经度35-150,0.1度一个像素，纬度15-60
-        data = data[30:450, 350:1030]  #切片后的数据纬度15-57，经度70-138度，包含了中国的国界线
+    """ if satellite=="modis":#原始数据经度35-150,0.1度一个像素，纬度15-60
+        data = data[30:450, 350:1030]  #切片后的数据纬度15-57，经度70-138度，包含了中国的国界线 """
     img_data = np.ma.masked_equal(data, -9.999)
     min_value = 0
     max_value = 1.6
@@ -80,7 +80,7 @@ def plotChina_image(data,date,satellite):
         filename="fy-aod-"+date+"-china.png"
 
     # read shapefile.生成全国底图的image
-    m.readshapefile("shape_files/ChinaProvince", "ChinaProvince")
+    m.readshapefile("shape_files/china/china", "china")
     # draw coastlines, state and country boundaries, edge of map.
     m.drawcoastlines(linewidth=0.3)
     # draw parallels.    
@@ -126,59 +126,16 @@ def readAreaCor(area):
         load_dict=json.load(load_f)
         lons=load_dict[area]["lons"]
         lats=load_dict[area]["lats"]
-        return lats,lons
+        gridspace=load_dict[area]["gridspace"]
+        return lats,lons,gridspace
 
-def plot_VectorClipImage(data,date,satellite,area):
-    date=creatDateString(date)
-    lats,lons=readAreaCor(area)
-    """从aod数据生成图像"""
-    #data=clipImage(data,satellite,minLon,minLat,maxLon,maxLat)
-    min_value = 0
-    max_value = 1.6
-    # create figure and axes instances
-    fig = plt.figure()
-    #ax=fig.add_subplot(111)
-    ax = plt.gca()
-    m = Basemap(
-        projection='merc',
-        llcrnrlon=lons[0],
-        llcrnrlat=lats[0],
-        urcrnrlon=lons[1],
-        urcrnrlat=lats[1],
-        resolution='l')
-    shapefile_path="shape_files/"+area+"/"+area
-    #m.readshapefile(shapefile_path, area)
-    parallels=[]
-    meridians=[]
-    sitesCoors=readSitesCor()
-    sites=sitesCoors[area]    
-    for site in sites:
-        x,y=m(sites[site][0],sites[site][1])
-        print(x,y)
-        print(type(site))    
-        print(site) 
-        plt.text(x,y,site,FontProperties=myfont,color="black",fontsize=7)  
-    parallels=np.arange(int(lats[0]),int(lats[1]),1)
-    meridians=np.arange(int(lons[0]),int(lons[1]),1)
-    if area=='jingjinji':      
-        beijing_x,beijing_y=m(116.2,40.2)
-        plt.text(beijing_x,beijing_y,u'北京',FontProperties=myfont,color="red",fontsize=8)                        
-    m.drawparallels(parallels, linewidth=0.5,dashes=[5, 2,2,2], labels=[1, 0, 0, 0], fontsize=10)
-    m.drawmeridians(meridians, linewidth=0.5,dashes=[5, 2,2,2], labels=[0, 0, 0, 1], fontsize=10)
-    maxLat=lats[1]
-    minLat=lats[0]
-    maxLon=lons[1]-0.1
-    minLon=lons[0]
-    lats, lons = np.mgrid[maxLat:minLat:-0.1, minLon:maxLon:0.1]
+def getSatResolution(satellite):
     if satellite=="fy":
-        lats, lons = np.mgrid[maxLat:minLat:-0.05, maxLon:minLon:0.05]
-        clevs = np.arange(min_value, max_value, 0.05)
+        return 0.05
     else:
-        lats, lons = np.mgrid[maxLat:minLat:-0.1, minLon:maxLon:0.1]
-        clevs = np.arange(min_value, max_value, 0.1)
-    cs = m.contourf(
-        lons, lats, data, clevs, cmap=plt.cm.rainbow, latlon=True)
-    plt.show()
+        return 0.1
+
+def creatClipPath(area,m):
     #生成区域光学厚度图
     #读取矢量数据
     shp_path="shape_files/"+area+"/"+area+".shp"
@@ -202,11 +159,59 @@ def plot_VectorClipImage(data,date,satellite,area):
     clip = Path(vertices, codes)
     clip = PathPatch(clip, facecolor='none', edgecolor='none')
     # draw a invisible patch, otherwise the clip has no effect
-    ax.add_patch(clip)
+    return clip
+    
 
-    # 裁切数据
-    for contour in cs.collections:
-        contour.set_clip_path(clip)
+def plot_VectorClipImage(data,date,satellite,area):
+    date=creatDateString(date)
+    resolution=getSatResolution(satellite)
+    lats,lons,gridspace=readAreaCor(area)
+    """从aod数据生成图像"""
+    #data=clipImage(data,satellite,minLon,minLat,maxLon,maxLat)
+    min_value = 0
+    max_value = 1.6
+    # create figure and axes instances
+    fig = plt.figure()    
+    m = Basemap(
+        projection='merc',
+        llcrnrlon=lons[0],
+        llcrnrlat=lats[0],
+        urcrnrlon=lons[1],
+        urcrnrlat=lats[1],
+        resolution='l')
+    shapefile_path="shape_files/"+area+"/"+area
+    m.readshapefile(shapefile_path, area)
+    parallels=[]
+    meridians=[]
+    sitesCoors=readSitesCor()
+    sites=sitesCoors[area]    
+    for site in sites:
+        x,y=m(sites[site][0],sites[site][1])   
+        plt.text(x,y,site,FontProperties=myfont,color="black",fontsize=7)     
+    if area=='jingjinji':      
+        beijing_x,beijing_y=m(116.2,40.2)
+        plt.text(beijing_x,beijing_y,u'北京',FontProperties=myfont,color="red",fontsize=8)  
+    parallels=np.arange(round(lats[0]),round(lats[1]),gridspace)
+    meridians=np.arange(round(lons[0]),round(lons[1]),gridspace)                      
+    m.drawparallels(parallels, linewidth=0.5,dashes=[5, 2,2,2], labels=[1, 0, 0, 0], fontsize=10)
+    m.drawmeridians(meridians, linewidth=0.5,dashes=[5, 2,2,2], labels=[0, 0, 0, 1], fontsize=10)
+    num=round(((lats[1])-lats[0])/0.1+1)
+    lat=np.linspace(lats[1],lats[0],num)
+    num=round(((lons[1])-lons[0])/0.1+1)
+    lon=np.linspace(lons[0],lons[1],num)
+    lons, lats = np.meshgrid(lon,lat)
+    #lats,lons=np.mgrid[lats[1]:lats[0]:-0.1,lons[0]:lons[1]:0.1]
+    clevs = np.arange(min_value, max_value, resolution)
+    cs = m.contourf(
+        lons, lats, data, clevs, cmap=plt.cm.rainbow, latlon=True)
+    if area!="china":
+       #ax=fig.add_subplot(111)
+        ax = plt.gca()
+        clip=creatClipPath(area,m)
+        ax.add_patch(clip)
+        # 裁切数据
+        for contour in cs.collections:
+            contour.set_clip_path(clip)
     # add colorbar.
     cbar = m.colorbar(cs, location='bottom', pad="8%",ticks=[0.0,0.3,0.6,0.9,1.2,1.5])
     cbar.set_label('Aerosol Optical Depth')
@@ -220,8 +225,6 @@ def plot_VectorClipImage(data,date,satellite,area):
     data.shape = (width, height, 4)
     # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
     data = np.roll(data, 3, axis=2)
-   
-    #plt.show()
     filename=satellite+"-aod-"+date+"-"+area.lower()+".png"
     #fig.tight_layout()
     plt.savefig("aod-image/"+filename, format = 'png',bbox_inches='tight')

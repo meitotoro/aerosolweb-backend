@@ -1,18 +1,22 @@
 {
     "china":{
         "lons":[70,138],
-        "lats":[15,57]
+        "lats":[15,57],
+        "gridspace":10
     },
     "jingjinji":{
-        "lons":[114,121],
-        "lats":[36,43]
+        "lons":[113,120],
+        "lats":[35.7,43],
+        "gridspace":2
     },
     "zhusanjiao":{
-        "lons":[111.2,115.4],
-        "lats":[21.5,24.5]
+        "lons":[111.2,115.6],
+        "lats":[21.5,24.6],
+        "gridspace":1
     },
     "changsanjiao":{
         "lons":[116,124],
-        "lats":[28,35]
+        "lats":[28,35],
+        "gridspace":2
     }
 }

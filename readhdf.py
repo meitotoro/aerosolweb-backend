@@ -39,7 +39,7 @@ class SatelliteData(object):
             if(satellite=="modis"):                
                 obj = SD.SD(path, SD.SDC.READ)
                 #光学厚度图像676*451
-                aod_550 = obj.select("SRAP_AOD_MONTH_AVE at 550nm").get() * 0.001
+                aod_550 = obj.select("SRAP_AOD_MONTH_AVE at 550nm").get()                             
                 print(type(aod_550))
             elif(satellite=="avhrr"):                
                 f = h5py.File(path, 'r')
@@ -61,9 +61,9 @@ class SatelliteData(object):
                 #aod_550=data[660:1500,5000:6360]* 0.001
                 aod_550=data[:]*0.001
                 print(type(aod_550))
-            row1,row2,colum1,colum2=self.getRowColums()
-            aod_550=aod_550[row1:row2,colum1:colum2]
-            self.aod_550=aod_550                     
+            self.aod_550=aod_550 
+            self.clipData()          
+            self.aod_550=self.aod_550*0.001                     
         else:
             self.aod_550=_aod550 
 
@@ -76,14 +76,42 @@ class SatelliteData(object):
             area_lons=coors["lons"]
             return area_lats,area_lons
 
-    def getRowColums(self):
+    def clipData(self):
         area_lats,area_lons=self.getAreaLatsLons()
         sat_lats,sat_lons,resolution=self.getSatLatsLons()
-        row_index1=(sat_lats[1]-area_lats[1])/resolution
-        row_index2=(sat_lats[1]-area_lats[0])/resolution
-        colum_index1=(area_lons[0]-sat_lons[0])/resolution
-        colum_index2=(area_lons[1]-sat_lons[0])/resolution
-        return int(row_index1),int(row_index2),int(colum_index1),int(colum_index2)
+        row_index1=int(round((sat_lats[1]-area_lats[1])/resolution))
+        row_index2=int(round((sat_lats[1]-area_lats[0])/resolution))
+        row_max=int((sat_lats[1]-sat_lats[0])/resolution)
+        colum_index1=int(round((area_lons[0]-sat_lons[0])/resolution))
+        colum_index2=int(round((area_lons[1]-sat_lons[0])/resolution))
+        column_max=int((sat_lons[1]-sat_lons[0])/resolution)
+        if row_index1<0:   
+            col=self.aod_550.shape[1]
+            row=self.aod_550.shape[0]     
+            new_row=np.full((abs(row_index1),col),-9999)
+            self.aod_550=np.row_stack((new_row,self.aod_550))
+            row_index1=0        
+        if row_index2>row_max:
+            col=self.aod_550.shape[1]
+            row=self.aod_550.shape[0]
+            new_row=np.full(((row_index2-row_max),col),-9999)
+            self.aod_550=np.row_stack((self.aod_550,new_row))
+            row_index2=row_max                   
+        elif colum_index1<0:
+            col=self.aod_550.shape[1]
+            row=self.aod_550.shape[0]
+            new_colum=np.full((row,abs(colum_index1)),-9999)
+            self.aod_550=np.column_stack((new_colum,self.aod_550))
+            colum_index1=0    
+        elif colum_index2>column_max:
+            col=self.aod_550.shape[1]
+            row=self.aod_550.shape[0]
+            new_colum=np.full((row,(colum_index2-column_max)),-9999)
+            self.aod_550=np.column_stack((self.aod_550,new_colum))
+            colum_index2=column_max
+        else:
+            self.aod_550=self.aod_550[row_index1-1:row_index2,colum_index1:colum_index2+1]
+        print(self.aod_550.shape[0])
     
     def getSatLatsLons(self):
         with open("satellite-coors.txt") as load_s:
@@ -299,7 +327,7 @@ def getMap(path,satellite, date,area,flag):
         return "",""
     if(area=="china"):
         #全国地理底图的aod数据
-        image_name=image.plotChina_image(aod,date,satellite)
+        image_name=image.plot_VectorClipImage(aod,date,satellite,area)
     elif (area=="jingjinji"):
         #京津冀经度（113,120）,纬度(36,43)
         image_name=image.plot_VectorClipImage(aod,date,satellite,area)
@@ -330,7 +358,7 @@ if __name__ == "__main__":
     #year_aod = fileList(files_path, 2001, 2017, temp_lon, temp_lat)
    
     #image_name,sites_aod = getMap(files_path_fy,"fy", "2011-spring","jingjinji","season")
-    image_name,sites_aod = getMap(files_path_modis,"modis", "200503","zhusanjiao","month")
+    image_name,sites_aod = getMap(files_path_modis,"modis", "20038","china","month")
     #image_name,sites_aod=yearMap(files_path_avhrr,"avhrr",2010,"china")
     #image_name,sites_aod=yearMap(files_path_modis,"modis",2010,"jingjinji")
     ''' print(month_aod)
